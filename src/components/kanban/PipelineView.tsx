@@ -6,6 +6,7 @@ import { STAGES, STAGE_VAR } from "../../lib/constants";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
 import { orderForIndex, insertIndexFromHint, type DropHint } from "../../lib/ordering";
+import { ownerName } from "../../lib/users";
 import LeadCard from "./LeadCard";
 
 export default function PipelineView() {
@@ -17,9 +18,6 @@ export default function PipelineView() {
   const create = useMutation(api.leads.create);
   const modal = useModal();
   const toast = useToast();
-
-  const ownerName = (id?: string) =>
-    users.find((u) => u._id === id)?.displayName ?? "—";
 
   async function createLead(stage: string) {
     const today = new Date().toISOString().slice(0, 10);
@@ -114,7 +112,7 @@ export default function PipelineView() {
                           <LeadCard
                             lead={lead}
                             contactName={contactName}
-                            ownerName={ownerName(lead.agareId)}
+                            ownerName={ownerName(users, lead.agareId)}
                             onClick={() => modal.openLeadDetail(lead._id)}
                             onDragStart={() => setDragId(lead._id)}
                             onDragEnd={clearDrag}

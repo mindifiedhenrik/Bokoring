@@ -7,7 +7,7 @@ interface TaskCardProps {
   task: Doc<"tasks">;
   projectColor: string;
   archiveDays: number;
-  ownerName: string;
+  ownerName: string | null;
   onClick: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -39,7 +39,7 @@ export default function TaskCard({ task, projectColor, archiveDays, ownerName, o
       <h4>{task.titel}</h4>
       <div className="tm">
         <span className={"prio " + cls}>{task.prioritet || "Normal"}</span>
-        {ownerName !== "—" ? <span className="task-owner">{ownerName}</span> : null}
+        {ownerName ? <span className="task-owner">{ownerName}</span> : null}
       </div>
     </div>
   );

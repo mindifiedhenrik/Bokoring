@@ -4,6 +4,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { STAGES, STAGE_VAR, TASK_STATUSES, PRIORITIES } from "../../lib/constants";
 import { initials, fmtDate } from "../../lib/format";
+import { ownerName } from "../../lib/users";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
 import Modal from "../ui/Modal";
@@ -38,7 +39,6 @@ export default function CardDetail(props: Props) {
     { value: NONE, label: "Ingen" },
     ...users.map((u) => ({ value: u._id as string, label: u.displayName })),
   ];
-  const ownerName = (id?: string) => users.find((u) => u._id === id)?.displayName ?? "—";
 
   async function saveLead(patch: Partial<{ titel: string; beskrivning: string; contactId?: Id<"contacts">; sannolikhet: number; agareId?: Id<"users">; datum: string; steg: string }>) {
     if (!lead) return;
@@ -118,7 +118,7 @@ export default function CardDetail(props: Props) {
                   <InlineField type="number" label="Sannolikhet" value={lead.sannolikhet} min={0} max={100} step={5} suffix="%"
                     onSave={(v) => saveLead({ sannolikhet: Math.max(0, Math.min(100, v)) })} />
                   <InlineField type="select" label="Ansvarig" value={lead.agareId ?? NONE} options={userOptions}
-                    render={(v) => ownerName(v === NONE ? undefined : v)}
+                    render={(v) => ownerName(users, v === NONE ? undefined : (v as Id<"users">)) ?? "—"}
                     onSave={(v) => saveLead({ agareId: idToUser(v) })} />
                   <InlineField type="date" label="Datum" value={lead.datum} display={fmtDate(lead.datum)}
                     onSave={(v) => saveLead({ datum: v })} />
@@ -136,7 +136,7 @@ export default function CardDetail(props: Props) {
                   <InlineField type="select" label="Status" value={task.status} options={TASK_STATUSES.map((s) => ({ value: s, label: s }))}
                     onSave={(v) => saveTask({ status: v })} />
                   <InlineField type="select" label="Ansvarig" value={task.agareId ?? NONE} options={userOptions}
-                    render={(v) => ownerName(v === NONE ? undefined : v)}
+                    render={(v) => ownerName(users, v === NONE ? undefined : (v as Id<"users">)) ?? "—"}
                     onSave={(v) => saveTask({ agareId: idToUser(v) })} />
                   <InlineField type="select" label="Prioritet" value={task.prioritet} options={PRIORITIES.map((p) => ({ value: p, label: p }))}
                     render={(v) => <span className={"prio " + (v === "Hög" ? "high" : v === "Låg" ? "low" : "normal")}>{v}</span>}

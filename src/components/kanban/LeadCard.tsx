@@ -6,7 +6,7 @@ import { initials } from "../../lib/format";
 interface LeadCardProps {
   lead: Doc<"leads">;
   contactName: string;
-  ownerName: string;
+  ownerName: string | null;
   onClick: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -44,7 +44,7 @@ export default function LeadCard({ lead, contactName, ownerName, onClick, onDrag
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
             <circle cx="12" cy="7" r="4"/>
           </svg>
-          {ownerName}
+          {ownerName ?? "—"}
         </span>
       </div>
     </div>

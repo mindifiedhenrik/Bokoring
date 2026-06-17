@@ -6,6 +6,7 @@ import { TASK_STATUSES } from "../../lib/constants";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
 import { orderForIndex, insertIndexFromHint, type DropHint } from "../../lib/ordering";
+import { ownerName } from "../../lib/users";
 import TaskCard from "./TaskCard";
 import Pile from "./Pile";
 
@@ -21,9 +22,6 @@ export default function TasksView() {
   const create = useMutation(api.tasks.create);
   const modal = useModal();
   const toast = useToast();
-
-  const ownerName = (id?: string) =>
-    users.find((u) => u._id === id)?.displayName ?? "—";
 
   async function createTask(projectId: Id<"projects">, status: string) {
     const id = await create({ titel: "Namnlös uppgift", beskrivning: "", projectId, status, prioritet: "Normal" });
@@ -262,7 +260,7 @@ export default function TasksView() {
                                     task={item}
                                     projectColor={p.color}
                                     archiveDays={archiveDays}
-                                    ownerName={ownerName(item.agareId)}
+                                    ownerName={ownerName(users, item.agareId)}
                                     onClick={() => modal.openTaskDetail(item._id)}
                                     onDragStart={() => setDragId(item._id)}
                                     onDragEnd={clearDrag}

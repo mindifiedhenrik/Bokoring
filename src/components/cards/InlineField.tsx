@@ -26,11 +26,12 @@ export default function InlineField(props: Props) {
   const stop = () => setEditing(false);
 
   function commitText(raw: string) {
+    // Skip no-op writes (e.g. blur after opening a select without changing it).
+    const orig = props.type === "number" ? String(props.value) : props.value ?? "";
+    if (raw === orig) { stop(); return; }
     if (props.type === "number") {
       const n = Number(raw);
       props.onSave(isNaN(n) ? 0 : n);
-    } else if (props.type === "text" || props.type === "textarea") {
-      props.onSave(raw);
     } else {
       props.onSave(raw);
     }
