@@ -6,6 +6,7 @@ export default function LoginScreen() {
   const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -14,12 +15,14 @@ export default function LoginScreen() {
     setBusy(true);
     setError(null);
     try {
-      await signIn("password", { email, password, flow });
+      const params: Record<string, string> = { email, password, flow };
+      if (flow === "signUp") params.code = code;
+      await signIn("password", params);
     } catch {
       setError(
         flow === "signIn"
           ? "Fel e-post eller lösenord."
-          : "Kunde inte registrera. Kontrollera uppgifterna (lösenord minst 8 tecken)."
+          : "Kunde inte registrera. Kontrollera registreringskoden och att lösenordet är minst 8 tecken."
       );
       setBusy(false);
     }
@@ -43,6 +46,12 @@ export default function LoginScreen() {
             <label>Lösenord</label>
             <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
           </div>
+          {flow === "signUp" && (
+            <div className="field">
+              <label>Registreringskod</label>
+              <input type="text" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="Kod från din administratör" />
+            </div>
+          )}
           <button className="btn btn-primary" type="submit" disabled={busy}>
             {busy ? "…" : flow === "signIn" ? "Logga in" : "Skapa konto"}
           </button>
