@@ -5,29 +5,46 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { STAGES, STAGE_VAR } from "../../lib/constants";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
+import { orderForIndex, insertIndexFromHint, type DropHint } from "../../lib/ordering";
 import LeadCard from "./LeadCard";
 
 export default function PipelineView() {
   const leads = useQuery(api.leads.list) ?? [];
   const contacts = useQuery(api.contacts.list) ?? [];
   const move = useMutation(api.leads.move);
+  const reorder = useMutation(api.leads.reorder);
   const modal = useModal();
   const toast = useToast();
 
   const [dragId, setDragId] = useState<Id<"leads"> | null>(null);
   const [overStage, setOverStage] = useState<string | null>(null);
+  const [dropHint, setDropHint] = useState<DropHint | null>(null);
 
   const won = leads.filter((l) => l.steg === "Stängd").length;
 
-  async function onDrop(stage: string) {
+  function clearDrag() {
     setOverStage(null);
-    const id = dragId;
+    setDropHint(null);
     setDragId(null);
+  }
+
+  async function onDrop(stage: string) {
+    const id = dragId;
+    const hint = dropHint;
+    clearDrag();
     if (!id) return;
     const lead = leads.find((l) => l._id === id);
-    if (!lead || lead.steg === stage) return;
-    await move({ id, steg: stage });
-    toast(`Flyttad till "${stage}"`);
+    if (!lead) return;
+    const excl = leads.filter((l) => l.steg === stage && l._id !== id);
+    const insertIndex = hint && hint.key === stage ? insertIndexFromHint(excl, hint) : excl.length;
+    const order = orderForIndex(excl, insertIndex);
+    if (lead.steg === stage) {
+      await reorder({ id, order });
+      toast("Ordning uppdaterad");
+    } else {
+      await move({ id, steg: stage, order });
+      toast(`Flyttad till "${stage}"`);
+    }
   }
 
   return (
@@ -55,7 +72,11 @@ export default function PipelineView() {
             <div
               key={stage}
               className={"col" + (overStage === stage ? " drag-over" : "")}
-              onDragOver={(e) => { e.preventDefault(); setOverStage(stage); }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setOverStage(stage);
+                if (dragId) setDropHint({ key: stage, id: null, before: false });
+              }}
               onDragLeave={() => setOverStage(null)}
               onDrop={() => onDrop(stage)}
             >
@@ -64,20 +85,39 @@ export default function PipelineView() {
                 <h2>{stage}</h2>
                 <span className="n">{items.length}</span>
               </div>
-              <div className="col-body">
+              <div
+                className="col-body"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragId) setDropHint({ key: stage, id: null, before: false });
+                }}
+              >
                 {items.length > 0
                   ? items.map((lead) => {
                       const contact = contacts.find((c) => c._id === lead.contactId);
                       const contactName = contact?.namn ?? "Ingen kontakt";
+                      const hintMatch = dropHint && dropHint.key === stage && dropHint.id === lead._id;
                       return (
-                        <LeadCard
-                          key={lead._id}
-                          lead={lead}
-                          contactName={contactName}
-                          onClick={() => modal.openLeadDetail(lead._id)}
-                          onDragStart={() => setDragId(lead._id)}
-                          onDragEnd={() => setDragId(null)}
-                        />
+                        <div key={lead._id} className="drop-slot">
+                          {hintMatch && dropHint!.before && <div className="drop-line" />}
+                          <LeadCard
+                            lead={lead}
+                            contactName={contactName}
+                            onClick={() => modal.openLeadDetail(lead._id)}
+                            onDragStart={() => setDragId(lead._id)}
+                            onDragEnd={clearDrag}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (!dragId) return;
+                              const r = e.currentTarget.getBoundingClientRect();
+                              const before = e.clientY < r.top + r.height / 2;
+                              setOverStage(stage);
+                              setDropHint({ key: stage, id: lead._id, before });
+                            }}
+                          />
+                          {hintMatch && !dropHint!.before && <div className="drop-line" />}
+                        </div>
                       );
                     })
                   : <div className="empty-hint">Inga affärer här</div>

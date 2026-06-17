@@ -144,6 +144,8 @@
     transition: background .18s ease, border-color .18s ease;
   }
   .col.drag-over { background: var(--accent-soft); border-color: var(--accent); }
+  .drop-line { height: 0; border-top: 2px solid var(--accent); margin: -1px 0; border-radius: 2px; }
+  .swim-label .drop-line { flex-basis: 100%; align-self: center; }
   .col-head {
     display: flex; align-items: center; gap: 9px;
     padding: 15px 15px 12px;

@@ -5,6 +5,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { TASK_STATUSES } from "../../lib/constants";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
+import { orderForIndex, insertIndexFromHint, type DropHint } from "../../lib/ordering";
 import TaskCard from "./TaskCard";
 import Pile from "./Pile";
 
@@ -14,11 +15,15 @@ export default function TasksView() {
   const settings = useQuery(api.settings.get) ?? { archiveDays: 3, pileThreshold: 3 };
 
   const move = useMutation(api.tasks.move);
+  const reorder = useMutation(api.tasks.reorder);
+  const reorderProject = useMutation(api.projects.reorder);
   const modal = useModal();
   const toast = useToast();
 
   const [dragId, setDragId] = useState<Id<"tasks"> | null>(null);
+  const [dragProjectId, setDragProjectId] = useState<Id<"projects"> | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
+  const [dropHint, setDropHint] = useState<DropHint | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const th = Number(settings.pileThreshold);
@@ -48,22 +53,60 @@ export default function TasksView() {
     });
   }
 
-  async function onDrop(pid: Id<"projects">, status: string) {
+  function clearDrag() {
     setOverKey(null);
-    const id = dragId;
+    setDropHint(null);
     setDragId(null);
-    if (!id) return;
+    setDragProjectId(null);
+  }
+
+  async function onDrop(pid: Id<"projects">, status: string) {
+    const id = dragId;
+    const hint = dropHint;
+    // A project row is being dragged, not a task card — ignore for cells.
+    if (!id) {
+      clearDrag();
+      return;
+    }
+    clearDrag();
     const task = tasks.find((t) => t._id === id);
     if (!task) return;
-    if (task.projectId === pid && task.status === status) return;
+    const cellKey = pid + "|" + status;
+    const excl = cellTasks(pid, status).filter((t) => t._id !== id);
+    const insertIndex = hint && hint.key === cellKey ? insertIndexFromHint(excl, hint) : excl.length;
+    const order = orderForIndex(excl, insertIndex);
+    const sameCell = task.projectId === pid && task.status === status;
+    if (sameCell) {
+      await reorder({ id, order });
+      toast("Ordning uppdaterad");
+      return;
+    }
     const crossProject = task.projectId !== pid;
     if (crossProject) {
       const fromP = projects.find((p) => p._id === task.projectId)?.namn ?? "—";
       const toP = projects.find((p) => p._id === pid)?.namn ?? "—";
       if (!confirm(`Flytta ”${task.titel}” från projektet ”${fromP}” till ”${toP}”?`)) return;
     }
-    await move({ id, projectId: pid, status });
+    await move({ id, projectId: pid, status, order });
     toast(crossProject ? "Flyttad till annat projekt" : `Flyttad till ”${status}”`);
+  }
+
+  async function onDropProject(targetId: Id<"projects">) {
+    const id = dragProjectId;
+    const hint = dropHint;
+    // A task card is being dragged, not a project row — ignore.
+    if (!id) {
+      clearDrag();
+      return;
+    }
+    clearDrag();
+    const excl = projects.filter((p) => p._id !== id);
+    const insertIndex =
+      hint && hint.key === "projects" ? insertIndexFromHint(excl, hint) : excl.length;
+    const order = orderForIndex(excl, insertIndex);
+    void targetId;
+    await reorderProject({ id, order });
+    toast("Projektordning uppdaterad");
   }
 
   return (
@@ -129,9 +172,25 @@ export default function TasksView() {
               const pileKeys = TASK_STATUSES.filter((s) => th > 0 && cellTasks(p._id, s).length > th).map((s) => p._id + "|" + s);
               const hasPiles = pileKeys.length > 0;
               const allOpen = hasPiles && pileKeys.every((k) => expanded.has(k));
+              const projHint = dropHint && dropHint.key === "projects" && dropHint.id === p._id;
               return (
                 <div className="swim-row" key={p._id}>
-                  <div className="swim-label" style={{ ["--pc" as any]: p.color }}>
+                  <div
+                    className="swim-label"
+                    style={{ ["--pc" as any]: p.color, cursor: "grab" }}
+                    draggable
+                    onDragStart={() => setDragProjectId(p._id)}
+                    onDragEnd={clearDrag}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (!dragProjectId) return;
+                      const r = e.currentTarget.getBoundingClientRect();
+                      const before = e.clientY < r.top + r.height / 2;
+                      setDropHint({ key: "projects", id: p._id, before });
+                    }}
+                    onDrop={() => onDropProject(p._id)}
+                  >
+                    {projHint && dropHint!.before && <div className="drop-line" />}
                     <div className="swim-bar"></div>
                     <div className="pbody">
                       <div className="pn">{p.namn}</div>
@@ -162,6 +221,7 @@ export default function TasksView() {
                         </svg>
                       </button>
                     </div>
+                    {projHint && !dropHint!.before && <div className="drop-line" />}
                   </div>
 
                   {TASK_STATUSES.map((s) => {
@@ -176,6 +236,7 @@ export default function TasksView() {
                         onDragOver={(e) => {
                           e.preventDefault();
                           setOverKey(key);
+                          if (dragId) setDropHint({ key, id: null, before: false });
                         }}
                         onDragLeave={() => setOverKey(null)}
                         onDrop={() => onDrop(p._id, s)}
@@ -184,17 +245,32 @@ export default function TasksView() {
                           <Pile items={items} color={p.color} onOpen={() => toggleKey(key)} />
                         ) : (
                           <>
-                            {items.map((item) => (
-                              <TaskCard
-                                key={item._id}
-                                task={item}
-                                projectColor={p.color}
-                                archiveDays={archiveDays}
-                                onClick={() => modal.openTaskForm(item._id)}
-                                onDragStart={() => setDragId(item._id)}
-                                onDragEnd={() => setDragId(null)}
-                              />
-                            ))}
+                            {items.map((item) => {
+                              const hintMatch = dropHint && dropHint.key === key && dropHint.id === item._id;
+                              return (
+                                <div key={item._id} className="drop-slot">
+                                  {hintMatch && dropHint!.before && <div className="drop-line" />}
+                                  <TaskCard
+                                    task={item}
+                                    projectColor={p.color}
+                                    archiveDays={archiveDays}
+                                    onClick={() => modal.openTaskForm(item._id)}
+                                    onDragStart={() => setDragId(item._id)}
+                                    onDragEnd={clearDrag}
+                                    onDragOver={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (!dragId) return;
+                                      const r = e.currentTarget.getBoundingClientRect();
+                                      const before = e.clientY < r.top + r.height / 2;
+                                      setOverKey(key);
+                                      setDropHint({ key, id: item._id, before });
+                                    }}
+                                  />
+                                  {hintMatch && !dropHint!.before && <div className="drop-line" />}
+                                </div>
+                              );
+                            })}
                             {overflow && (
                               <button className="pile-collapse" onClick={() => toggleKey(key)}>
                                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

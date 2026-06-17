@@ -1,3 +1,4 @@
+import type React from "react";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { PRIORITY_CLASS } from "../../lib/constants";
 import { daysSinceMove } from "../../lib/format";
@@ -9,9 +10,10 @@ interface TaskCardProps {
   onClick: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
 }
 
-export default function TaskCard({ task, projectColor, archiveDays, onClick, onDragStart, onDragEnd }: TaskCardProps) {
+export default function TaskCard({ task, projectColor, archiveDays, onClick, onDragStart, onDragEnd, onDragOver }: TaskCardProps) {
   const cls = PRIORITY_CLASS[task.prioritet] ?? "normal";
   const days = daysSinceMove(task);
   // Highlight when a Done card is one day away from being archived.
@@ -25,6 +27,7 @@ export default function TaskCard({ task, projectColor, archiveDays, onClick, onD
       onClick={onClick}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
     >
       <span
         className={"age" + (warn ? " warn" : "")}
