@@ -43,6 +43,11 @@ export const remove = mutation({
       .withIndex("by_contact", (q) => q.eq("contactId", id))
       .collect();
     for (const l of linked) await ctx.db.patch("leads", l._id, { contactId: undefined });
+    const notes = await ctx.db
+      .query("notes")
+      .withIndex("by_contact", (q) => q.eq("contactId", id))
+      .collect();
+    for (const n of notes) await ctx.db.delete("notes", n._id);
     await ctx.db.delete("contacts", id);
   },
 });

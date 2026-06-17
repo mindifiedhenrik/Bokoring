@@ -59,6 +59,13 @@ export default defineSchema({
     userId: v.id("users"),
     displayName: v.string(),
   }).index("by_user", ["userId"]),
+  // Short notes attached to a contact. Creation time + author come from
+  // `_creationTime` and `authorId`.
+  notes: defineTable({
+    contactId: v.id("contacts"),
+    text: v.string(),
+    authorId: v.optional(v.id("users")),
+  }).index("by_contact", ["contactId"]),
   settings: defineTable({
     archiveDays: v.number(),
     pileThreshold: v.number(),

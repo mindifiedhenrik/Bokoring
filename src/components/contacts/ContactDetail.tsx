@@ -7,6 +7,7 @@ import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
 import Modal from "../ui/Modal";
 import InlineField from "../cards/InlineField";
+import ContactNotes from "./ContactNotes";
 
 interface ContactDetailProps {
   id: Id<"contacts">;
@@ -122,6 +123,8 @@ export default function ContactDetail({ id }: ContactDetailProps) {
             <div className="muted">Inga affärer kopplade till denna kontakt ännu.</div>
           )}
         </div>
+
+        <ContactNotes contactId={contact._id} />
       </div>
 
       <div className="modal-foot">

@@ -538,3 +538,29 @@
   width: 28px; height: 28px; border-radius: 50%;
   background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; flex: none;
 }
+/* Kontaktanteckningar */
+.note-add { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 12px; }
+.note-add textarea {
+  flex: 1; min-height: 40px; resize: vertical; font: inherit;
+}
+.note-add .btn { flex: none; }
+.note-list { display: flex; flex-direction: column; gap: 8px; }
+.note-item {
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 9px 11px; cursor: pointer; transition: background 0.12s ease, border-color 0.12s ease;
+}
+.note-item:hover { border-color: var(--accent); background: rgba(0, 0, 0, 0.02); }
+.note-item .note-body {
+  font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.note-item.open .note-body { white-space: pre-wrap; }
+.note-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 5px; font-size: 12px; color: var(--muted, #888);
+}
+.note-del {
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent; color: var(--muted, #888);
+  cursor: pointer; padding: 2px; border-radius: 4px; flex: none;
+}
+.note-del:hover { color: var(--danger, #c0392b); background: rgba(0, 0, 0, 0.05); }
