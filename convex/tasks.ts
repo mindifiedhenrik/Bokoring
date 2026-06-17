@@ -24,7 +24,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
     const log = [{ ts: new Date().toISOString(), from: null, to: args.status }];
-    return await ctx.db.insert("tasks", { ...args, archived: false, log });
+    return await ctx.db.insert("tasks", { ...args, archived: false, archivedAt: null, log });
   },
 });
 

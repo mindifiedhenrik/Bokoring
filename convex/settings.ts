@@ -19,8 +19,13 @@ export const set = mutation({
   args: { archiveDays: v.number(), pileThreshold: v.number() },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
+    // Clamp server-side so the invariant holds regardless of caller.
+    const clean = {
+      archiveDays: Math.max(0, args.archiveDays),
+      pileThreshold: Math.max(0, args.pileThreshold),
+    };
     const row = await ctx.db.query("settings").first();
-    if (row) await ctx.db.patch("settings", row._id, args);
-    else await ctx.db.insert("settings", args);
+    if (row) await ctx.db.patch("settings", row._id, clean);
+    else await ctx.db.insert("settings", clean);
   },
 });
