@@ -72,6 +72,9 @@ export const remove = mutation({
       for (const tok of tokens) await ctx.db.delete("authRefreshTokens", tok._id);
       await ctx.db.delete("authSessions", s._id);
     }
+    // authVerifiers (transient PKCE rows) are intentionally not purged: they exist
+    // only for OAuth flows, this app uses the Password provider, and the table has
+    // no user/session index to query them cleanly. Any stray rows expire on their own.
 
     const profile = await ctx.db
       .query("userProfiles")

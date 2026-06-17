@@ -18,6 +18,7 @@ import type * as projects from "../projects.js";
 import type * as seed from "../seed.js";
 import type * as settings from "../settings.js";
 import type * as tasks from "../tasks.js";
+import type * as userProfiles from "../userProfiles.js";
 import type * as users from "../users.js";
 
 import type {
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   settings: typeof settings;
   tasks: typeof tasks;
+  userProfiles: typeof userProfiles;
   users: typeof users;
 }>;
 
