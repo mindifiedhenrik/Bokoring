@@ -19,3 +19,8 @@ npm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Local tooling (Claude Code preview config, Convex AI skill cache)
+.claude/
+.agents/
+skills-lock.json
