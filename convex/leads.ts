@@ -16,7 +16,7 @@ const fields = {
   beskrivning: v.string(),
   contactId: v.optional(v.id("contacts")),
   sannolikhet: v.number(),
-  agare: v.string(),
+  agareId: v.optional(v.id("users")),
   datum: v.string(),
   steg: v.string(),
 };

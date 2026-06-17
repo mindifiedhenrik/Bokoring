@@ -15,7 +15,7 @@ async function setup() {
 test("tasks.create logs the initial status", async () => {
   const { u, projectId } = await setup();
   const id = await u.mutation(api.tasks.create, {
-    titel: "T", beskrivning: "", projectId, status: "Backlog", agare: "", prioritet: "Normal",
+    titel: "T", beskrivning: "", projectId, status: "Backlog", prioritet: "Normal",
   });
   const task = (await u.query(api.tasks.list, {})).find((x) => x._id === id)!;
   expect(task.log.at(-1)).toMatchObject({ from: null, to: "Backlog" });
@@ -24,7 +24,7 @@ test("tasks.create logs the initial status", async () => {
 test("tasks.move logs status change", async () => {
   const { u, projectId } = await setup();
   const id = await u.mutation(api.tasks.create, {
-    titel: "T", beskrivning: "", projectId, status: "Backlog", agare: "", prioritet: "Normal",
+    titel: "T", beskrivning: "", projectId, status: "Backlog", prioritet: "Normal",
   });
   await u.mutation(api.tasks.move, { id, projectId, status: "Todo" });
   const task = (await u.query(api.tasks.list, {})).find((x) => x._id === id)!;
@@ -36,7 +36,7 @@ test("tasks.move across projects logs a project move", async () => {
   const { u, projectId } = await setup();
   const otherId = await u.mutation(api.projects.create, { namn: "P2", beskrivning: "" });
   const id = await u.mutation(api.tasks.create, {
-    titel: "T", beskrivning: "", projectId, status: "Todo", agare: "", prioritet: "Normal",
+    titel: "T", beskrivning: "", projectId, status: "Todo", prioritet: "Normal",
   });
   await u.mutation(api.tasks.move, { id, projectId: otherId, status: "Todo" });
   const task = (await u.query(api.tasks.list, {})).find((x) => x._id === id)!;
@@ -47,7 +47,7 @@ test("tasks.move across projects logs a project move", async () => {
 test("tasks.restore unarchives and appends a restored entry", async () => {
   const { u, projectId } = await setup();
   const id = await u.mutation(api.tasks.create, {
-    titel: "T", beskrivning: "", projectId, status: "Done", agare: "", prioritet: "Normal",
+    titel: "T", beskrivning: "", projectId, status: "Done", prioritet: "Normal",
   });
   await u.mutation(api.tasks.restore, { id });
   const task = (await u.query(api.tasks.list, {})).find((x) => x._id === id)!;

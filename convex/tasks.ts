@@ -16,7 +16,7 @@ const fields = {
   beskrivning: v.string(),
   projectId: v.id("projects"),
   status: v.string(),
-  agare: v.string(),
+  agareId: v.optional(v.id("users")),
   prioritet: v.string(),
 };
 
