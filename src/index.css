@@ -514,3 +514,27 @@
 }
 .sidebar .logout:hover { background: rgba(255,255,255,.06); color: #fff; }
 .sidebar .logout svg { width: 19px; height: 19px; }
+
+/* Inline-redigerbara kortfält */
+.info-item.inline .inline-v {
+  cursor: text;
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  margin: -4px -6px;
+  transition: background 0.12s ease;
+  min-height: 1.4em;
+}
+.info-item.inline .inline-v:hover { background: rgba(0, 0, 0, 0.04); }
+.info-item.inline .inline-v:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.info-item.inline.editing input,
+.info-item.inline.editing select,
+.info-item.inline.editing textarea { width: 100%; }
+.info-item.inline.editing textarea { min-height: 72px; resize: vertical; }
+.title-inline .inline-v { font-size: inherit; font-weight: inherit; padding: 2px 6px; }
+.title-inline.editing input { font-size: 1rem; font-weight: 600; }
+/* Avatar i settings-listor */
+.arch-item > .avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; flex: none;
+}
