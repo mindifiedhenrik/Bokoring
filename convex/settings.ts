@@ -9,9 +9,12 @@ export const get = query({
   handler: async (ctx) => {
     await requireAuth(ctx);
     const row = await ctx.db.query("settings").first();
-    return row
+    const base = row
       ? { archiveDays: row.archiveDays, pileThreshold: row.pileThreshold }
       : DEFAULTS;
+    // Surfaced so members can share the invite code; everyone here is already
+    // a full member of the shared workspace.
+    return { ...base, signupCode: process.env.SIGNUP_CODE ?? null };
   },
 });
 

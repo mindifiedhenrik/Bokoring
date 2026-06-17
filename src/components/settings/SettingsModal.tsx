@@ -19,7 +19,7 @@ export default function SettingsModal() {
   return <SettingsBody initial={settings} />;
 }
 
-function SettingsBody({ initial }: { initial: { archiveDays: number; pileThreshold: number } }) {
+function SettingsBody({ initial }: { initial: { archiveDays: number; pileThreshold: number; signupCode: string | null } }) {
   const tasks = useQuery(api.tasks.list) ?? [];
   const projects = useQuery(api.projects.list) ?? [];
   const setSettings = useMutation(api.settings.set);
@@ -57,7 +57,47 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
       </div>
 
       <div className="modal-body">
-        <div className="section-label">Högar</div>
+        <div className="section-label">Registreringskod</div>
+        <div className="field">
+          <label>Kod för att skapa konto</label>
+          {initial.signupCode ? (
+            <>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input type="text" readOnly value={initial.signupCode} style={{ flex: 1 }} />
+                <button
+                  className="btn btn-ghost"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(initial.signupCode!);
+                      toast("Kod kopierad");
+                    } catch {
+                      toast("Kunde inte kopiera");
+                    }
+                  }}
+                >
+                  Kopiera
+                </button>
+              </div>
+              <div className="muted" style={{ fontSize: "12.5px", marginTop: "7px" }}>
+                Dela koden med personer som ska kunna registrera ett konto.{" "}
+                <a
+                  style={{ color: "var(--accent-deep)" }}
+                  href={`mailto:?subject=${encodeURIComponent("Inbjudan till Boköring CRM")}&body=${encodeURIComponent(
+                    `Hej!\n\nDu kan skapa ett konto i Boköring CRM med den här registreringskoden:\n\n${initial.signupCode}\n\nÖppna appen, välj "Registrera" och ange koden.`,
+                  )}`}
+                >
+                  Skicka i mejl
+                </a>
+              </div>
+            </>
+          ) : (
+            <div className="muted" style={{ fontSize: "12.5px" }}>
+              Ingen kod är satt. Sätt den med <code>npx convex env set SIGNUP_CODE "…"</code> för att tillåta registrering.
+            </div>
+          )}
+        </div>
+
+        <div className="section-label" style={{ marginTop: "14px" }}>Högar</div>
         <div className="field">
           <label>Bilda hög när en fas har fler än (kort)</label>
           <input
