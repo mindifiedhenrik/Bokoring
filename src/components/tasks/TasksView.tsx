@@ -176,7 +176,7 @@ export default function TasksView() {
               return (
                 <div className="swim-row" key={p._id}>
                   <div
-                    className="swim-label"
+                    className={"swim-label" + (projHint ? (dropHint!.before ? " drop-before" : " drop-after") : "")}
                     style={{ ["--pc" as any]: p.color, cursor: "grab" }}
                     draggable
                     onDragStart={() => setDragProjectId(p._id)}
@@ -190,7 +190,6 @@ export default function TasksView() {
                     }}
                     onDrop={() => onDropProject(p._id)}
                   >
-                    {projHint && dropHint!.before && <div className="drop-line" />}
                     <div className="swim-bar"></div>
                     <div className="pbody">
                       <div className="pn">{p.namn}</div>
@@ -221,7 +220,6 @@ export default function TasksView() {
                         </svg>
                       </button>
                     </div>
-                    {projHint && !dropHint!.before && <div className="drop-line" />}
                   </div>
 
                   {TASK_STATUSES.map((s) => {
