@@ -1,7 +1,6 @@
 import { useModal } from "../context/ModalContext";
 import CardDetail from "./cards/CardDetail";
 import ContactDetail from "./contacts/ContactDetail";
-import ContactForm from "./contacts/ContactForm";
 import ProjectForm from "./tasks/ProjectForm";
 import SettingsModal from "./settings/SettingsModal";
 
@@ -15,7 +14,6 @@ export default function ModalHost() {
         <CardDetail type="task" id={m.state.id} />
       );
     case "contactDetail": return <ContactDetail id={m.state.id} />;
-    case "contactForm": return <ContactForm id={m.state.id} />;
     case "projectForm": return <ProjectForm id={m.state.id} />;
     case "settings": return <SettingsModal />;
     default: return null;

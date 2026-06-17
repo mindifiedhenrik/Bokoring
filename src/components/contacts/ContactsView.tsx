@@ -9,11 +9,17 @@ export default function ContactsView() {
   const contacts = useQuery(api.contacts.list) ?? [];
   const leads = useQuery(api.leads.list) ?? [];
   const remove = useMutation(api.contacts.remove);
+  const create = useMutation(api.contacts.create);
   const modal = useModal();
   const toast = useToast();
 
   const leadCount = (id: Id<"contacts">) =>
     leads.filter((l) => l.contactId === id).length;
+
+  async function createContact() {
+    const id = await create({ namn: "Namnlös kontakt", foretag: "", epost: "", telefon: "" });
+    modal.openContactDetail(id);
+  }
 
   async function handleDelete(id: Id<"contacts">) {
     const contact = contacts.find((c) => c._id === id);
@@ -35,7 +41,7 @@ export default function ContactsView() {
           <div className="lead-sub">Kunddatabas – personer kopplade till dina affärer.</div>
         </div>
         <div className="spacer"></div>
-        <button className="btn btn-primary" onClick={() => modal.openContactForm()}>
+        <button className="btn btn-primary" onClick={createContact}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
             <path d="M12 5v14M5 12h14"/>
           </svg>
