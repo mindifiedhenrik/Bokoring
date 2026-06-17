@@ -70,6 +70,12 @@ export default defineSchema({
     text: v.string(),
     authorId: v.optional(v.id("users")),
   }).index("by_contact", ["contactId"]),
+  // Per-user read marker for a contact's notes (for the unread dot).
+  contactReads: defineTable({
+    userId: v.id("users"),
+    contactId: v.id("contacts"),
+    lastReadAt: v.number(),
+  }).index("by_user_contact", ["userId", "contactId"]),
   settings: defineTable({
     archiveDays: v.number(),
     pileThreshold: v.number(),

@@ -10,6 +10,7 @@ export default function ContactNotes({ contactId }: { contactId: Id<"contacts"> 
   const users = useQuery(api.users.list) ?? [];
   const add = useMutation(api.notes.add);
   const remove = useMutation(api.notes.remove);
+  const markRead = useMutation(api.contacts.markRead);
 
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
@@ -30,6 +31,8 @@ export default function ContactNotes({ contactId }: { contactId: Id<"contacts"> 
     setDraft("");
     setAdding(false);
     await add({ contactId, text });
+    // The author has obviously "read" their own note — keep it from showing unread.
+    void markRead({ id: contactId });
   }
 
   function cancel() {

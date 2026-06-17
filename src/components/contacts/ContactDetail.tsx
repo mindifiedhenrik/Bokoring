@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -19,8 +20,14 @@ export default function ContactDetail({ id }: ContactDetailProps) {
   const leads = useQuery(api.leads.list) ?? [];
   const update = useMutation(api.contacts.update);
   const remove = useMutation(api.contacts.remove);
+  const markRead = useMutation(api.contacts.markRead);
   const modal = useModal();
   const toast = useToast();
+
+  // Opening a contact clears its unread-note marker for the current user.
+  useEffect(() => {
+    void markRead({ id });
+  }, [id, markRead]);
 
   const contact = contacts.find((c) => c._id === id);
   if (!contact) return null;

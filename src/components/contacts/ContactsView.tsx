@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { initials, fmtDate } from "../../lib/format";
+import { ownerName } from "../../lib/users";
 import { useModal } from "../../context/ModalContext";
 
 type Sort = "namn" | "reminder" | "note";
@@ -10,6 +11,7 @@ type Sort = "namn" | "reminder" | "note";
 export default function ContactsView() {
   const contacts = useQuery(api.contacts.list) ?? [];
   const leads = useQuery(api.leads.list) ?? [];
+  const users = useQuery(api.users.list) ?? [];
   const create = useMutation(api.contacts.create);
   const modal = useModal();
 
@@ -18,6 +20,14 @@ export default function ContactsView() {
 
   const leadCount = (id: Id<"contacts">) =>
     leads.filter((l) => l.contactId === id).length;
+
+  // Green > 2 weeks out, yellow up to and including the reminder date, red once passed.
+  function remColor(datum: string) {
+    const days = Math.round((new Date(datum).getTime() - new Date(today).getTime()) / 86400000);
+    if (days < 0) return "red";
+    if (days <= 14) return "yellow";
+    return "green";
+  }
 
   const sorted = [...contacts].sort((a, b) => {
     if (sort === "reminder") {
@@ -98,7 +108,10 @@ export default function ContactsView() {
                         <div className="person">
                           <span className="avatar">{initials(c.namn)}</span>
                           <div>
-                            <div className="nm">{c.namn}</div>
+                            <div className="nm">
+                              {c.namn}
+                              {c.hasUnread ? <span className="unread-dot" title="Ny oläst anteckning" /> : null}
+                            </div>
                             <div className="co">{c.foretag || "—"}</div>
                           </div>
                         </div>
@@ -119,9 +132,15 @@ export default function ContactsView() {
                       <td>
                         {c.reminderDatum ? (
                           <div className="rem-cell">
-                            <span className={"rem-date" + (c.reminderDatum < today ? " overdue" : "")}>
-                              {fmtDate(c.reminderDatum)}
-                            </span>
+                            <div className="rem-line">
+                              <span className={"rem-dot " + remColor(c.reminderDatum)} />
+                              <span className={"rem-date" + (c.reminderDatum < today ? " overdue" : "")}>
+                                {fmtDate(c.reminderDatum)}
+                              </span>
+                              {ownerName(users, c.reminderAgareId) ? (
+                                <span className="rem-agare">· {ownerName(users, c.reminderAgareId)}</span>
+                              ) : null}
+                            </div>
                             {c.reminderText ? <span className="rem-text">{c.reminderText}</span> : null}
                           </div>
                         ) : (

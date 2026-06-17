@@ -48,6 +48,24 @@ test("contacts.list augmenterar med senaste anteckningens tidsstämpel", async (
   expect(listed.find((c) => c._id === contactId)!.lastNoteAt).toBeTypeOf("number");
 });
 
+test("hasUnread blir sant vid ny anteckning och nollställs av markRead", async () => {
+  const t = convexTest(schema, modules);
+  const { userId, contactId } = await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { email: "a@b.se" });
+    const contactId = await ctx.db.insert("contacts", { namn: "C", foretag: "", epost: "", telefon: "" });
+    return { userId, contactId };
+  });
+  const u = t.withIdentity({ subject: `${userId}|s` });
+
+  const get = async () => (await u.query(api.contacts.list, {})).find((c) => c._id === contactId)!;
+
+  expect((await get()).hasUnread).toBe(false); // inga anteckningar
+  await u.mutation(api.notes.add, { contactId, text: "Ny" });
+  expect((await get()).hasUnread).toBe(true); // ny oläst anteckning
+  await u.mutation(api.contacts.markRead, { id: contactId });
+  expect((await get()).hasUnread).toBe(false); // läst
+});
+
 test("contacts.setReminder och clearReminder sätter/nollställer påminnelsen", async () => {
   const t = convexTest(schema, modules);
   const { userId, contactId } = await t.run(async (ctx) => {
