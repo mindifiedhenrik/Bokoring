@@ -17,6 +17,8 @@ export default function ContactsView() {
 
   const [sort, setSort] = useState<Sort>("namn");
   const today = new Date().toISOString().slice(0, 10);
+  // Don't flash the unread dot for the contact that's open (it's being read/edited).
+  const openContactId = modal.state?.kind === "contactDetail" ? modal.state.id : null;
 
   const leadCount = (id: Id<"contacts">) =>
     leads.filter((l) => l.contactId === id).length;
@@ -110,7 +112,7 @@ export default function ContactsView() {
                           <div>
                             <div className="nm">
                               {c.namn}
-                              {c.hasUnread ? <span className="unread-dot" title="Ny oläst anteckning" /> : null}
+                              {c.hasUnread && c._id !== openContactId ? <span className="unread-dot" title="Ny oläst anteckning" /> : null}
                             </div>
                             <div className="co">{c.foretag || "—"}</div>
                           </div>
