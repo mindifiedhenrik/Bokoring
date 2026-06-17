@@ -6,7 +6,8 @@ export const list = query({
   args: {},
   handler: async (ctx) => {
     await requireAuth(ctx);
-    return await ctx.db.query("tasks").order("asc").collect();
+    const rows = await ctx.db.query("tasks").collect();
+    return rows.sort((a, b) => (a.order ?? a._creationTime) - (b.order ?? b._creationTime));
   },
 });
 
@@ -24,7 +25,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
     const log = [{ ts: new Date().toISOString(), from: null, to: args.status }];
-    return await ctx.db.insert("tasks", { ...args, archived: false, archivedAt: null, log });
+    return await ctx.db.insert("tasks", { ...args, archived: false, archivedAt: null, log, order: Date.now() });
   },
 });
 
@@ -49,8 +50,8 @@ export const update = mutation({
 });
 
 export const move = mutation({
-  args: { id: v.id("tasks"), projectId: v.id("projects"), status: v.string() },
-  handler: async (ctx, { id, projectId, status }) => {
+  args: { id: v.id("tasks"), projectId: v.id("projects"), status: v.string(), order: v.optional(v.number()) },
+  handler: async (ctx, { id, projectId, status, order }) => {
     await requireAuth(ctx);
     const prev = await ctx.db.get("tasks", id);
     if (!prev) return;
@@ -65,7 +66,15 @@ export const move = mutation({
     if (prev.status !== status) {
       log.push({ ts, from: prev.status, to: status });
     }
-    await ctx.db.patch("tasks", id, { projectId, status, log });
+    await ctx.db.patch("tasks", id, { projectId, status, log, ...(order !== undefined ? { order } : {}) });
+  },
+});
+
+export const reorder = mutation({
+  args: { id: v.id("tasks"), order: v.number() },
+  handler: async (ctx, { id, order }) => {
+    await requireAuth(ctx);
+    await ctx.db.patch("tasks", id, { order });
   },
 });
 

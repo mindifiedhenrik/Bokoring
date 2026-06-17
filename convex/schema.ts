@@ -30,11 +30,13 @@ export default defineSchema({
     datum: v.string(),
     steg: v.string(),
     log: v.array(logEntry),
+    order: v.optional(v.number()),
   }).index("by_contact", ["contactId"]),
   projects: defineTable({
     namn: v.string(),
     beskrivning: v.string(),
     color: v.string(),
+    order: v.optional(v.number()),
   }),
   tasks: defineTable({
     titel: v.string(),
@@ -46,6 +48,7 @@ export default defineSchema({
     archived: v.boolean(),
     archivedAt: v.optional(v.union(v.string(), v.null())),
     log: v.array(logEntry),
+    order: v.optional(v.number()),
   })
     .index("by_project", ["projectId"])
     .index("by_status", ["status"]),

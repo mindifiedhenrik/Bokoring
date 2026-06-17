@@ -6,7 +6,8 @@ export const list = query({
   args: {},
   handler: async (ctx) => {
     await requireAuth(ctx);
-    return await ctx.db.query("projects").order("asc").collect();
+    const rows = await ctx.db.query("projects").collect();
+    return rows.sort((a, b) => (a.order ?? a._creationTime) - (b.order ?? b._creationTime));
   },
 });
 
@@ -20,7 +21,7 @@ export const create = mutation({
     const color =
       PROJECT_COLORS.find((c) => !used.has(c)) ??
       PROJECT_COLORS[existing.length % PROJECT_COLORS.length];
-    return await ctx.db.insert("projects", { ...args, color });
+    return await ctx.db.insert("projects", { ...args, color, order: Date.now() });
   },
 });
 
@@ -29,6 +30,14 @@ export const update = mutation({
   handler: async (ctx, { id, ...patch }) => {
     await requireAuth(ctx);
     await ctx.db.patch("projects", id, patch);
+  },
+});
+
+export const reorder = mutation({
+  args: { id: v.id("projects"), order: v.number() },
+  handler: async (ctx, { id, order }) => {
+    await requireAuth(ctx);
+    await ctx.db.patch("projects", id, { order });
   },
 });
 
