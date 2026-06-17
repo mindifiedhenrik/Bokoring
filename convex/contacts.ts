@@ -6,8 +6,16 @@ export const list = query({
   args: {},
   handler: async (ctx) => {
     await requireAuth(ctx);
-    // CRM displays the full shared contact list.
-    return await ctx.db.query("contacts").order("desc").collect();
+    // CRM displays the full shared contact list. Each contact is augmented with
+    // the timestamp of its most recent note so the UI can sort by it.
+    const contacts = await ctx.db.query("contacts").order("desc").collect();
+    const notes = await ctx.db.query("notes").collect();
+    const lastNoteAt = new Map<string, number>();
+    for (const n of notes) {
+      const cur = lastNoteAt.get(n.contactId) ?? 0;
+      if (n._creationTime > cur) lastNoteAt.set(n.contactId, n._creationTime);
+    }
+    return contacts.map((c) => ({ ...c, lastNoteAt: lastNoteAt.get(c._id) ?? null }));
   },
 });
 
@@ -31,6 +39,35 @@ export const update = mutation({
   handler: async (ctx, { id, ...patch }) => {
     await requireAuth(ctx);
     await ctx.db.patch("contacts", id, patch);
+  },
+});
+
+export const setReminder = mutation({
+  args: {
+    id: v.id("contacts"),
+    agareId: v.optional(v.id("users")),
+    datum: v.string(),
+    text: v.string(),
+  },
+  handler: async (ctx, { id, agareId, datum, text }) => {
+    await requireAuth(ctx);
+    await ctx.db.patch("contacts", id, {
+      reminderAgareId: agareId,
+      reminderDatum: datum,
+      reminderText: text.trim(),
+    });
+  },
+});
+
+export const clearReminder = mutation({
+  args: { id: v.id("contacts") },
+  handler: async (ctx, { id }) => {
+    await requireAuth(ctx);
+    await ctx.db.patch("contacts", id, {
+      reminderAgareId: undefined,
+      reminderDatum: undefined,
+      reminderText: undefined,
+    });
   },
 });
 

@@ -7,6 +7,7 @@ import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
 import Modal from "../ui/Modal";
 import InlineField from "../cards/InlineField";
+import ContactReminder from "./ContactReminder";
 import ContactNotes from "./ContactNotes";
 
 interface ContactDetailProps {
@@ -100,6 +101,8 @@ export default function ContactDetail({ id }: ContactDetailProps) {
             onSave={(v) => save({ epost: v.trim() })}
           />
         </div>
+
+        <ContactReminder contact={contact} />
 
         <div className="section-label">Kopplade affärer ({linked.length})</div>
         <div className="linked-leads">

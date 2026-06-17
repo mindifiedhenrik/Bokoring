@@ -20,6 +20,10 @@ export default defineSchema({
     foretag: v.string(),
     epost: v.string(),
     telefon: v.string(),
+    // Optional single reminder: ansvarig (user), datum (ISO date), kort text.
+    reminderAgareId: v.optional(v.id("users")),
+    reminderDatum: v.optional(v.string()),
+    reminderText: v.optional(v.string()),
   }),
   leads: defineTable({
     titel: v.string(),

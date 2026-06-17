@@ -12,6 +12,7 @@ export default function ContactNotes({ contactId }: { contactId: Id<"contacts"> 
   const remove = useMutation(api.notes.remove);
 
   const [draft, setDraft] = useState("");
+  const [adding, setAdding] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   function toggle(id: string) {
@@ -27,29 +28,52 @@ export default function ContactNotes({ contactId }: { contactId: Id<"contacts"> 
     const text = draft.trim();
     if (!text) return;
     setDraft("");
+    setAdding(false);
     await add({ contactId, text });
+  }
+
+  function cancel() {
+    setDraft("");
+    setAdding(false);
   }
 
   return (
     <>
       <div className="section-label">Anteckningar ({notes.length})</div>
 
-      <div className="note-add">
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Kort anteckning…"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              void submit();
-            }
-          }}
-        />
-        <button className="btn btn-primary" onClick={submit} disabled={!draft.trim()}>
-          Lägg till
+      {adding ? (
+        <div className="note-add">
+          <textarea
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Kort anteckning…"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                void submit();
+              }
+              if (e.key === "Escape") {
+                e.preventDefault();
+                cancel();
+              }
+            }}
+          />
+          <div className="note-add-actions">
+            <button className="btn btn-primary" onClick={submit} disabled={!draft.trim()}>
+              Lägg till
+            </button>
+            <button className="btn btn-ghost" onClick={cancel}>Avbryt</button>
+          </div>
+        </div>
+      ) : (
+        <button className="btn btn-ghost note-add-btn" onClick={() => setAdding(true)}>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Skapa anteckning
         </button>
-      </div>
+      )}
 
       <div className="note-list">
         {notes.length === 0 ? (

@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { initials } from "../../lib/format";
+import { initials, fmtDate } from "../../lib/format";
 import { useModal } from "../../context/ModalContext";
+
+type Sort = "namn" | "reminder" | "note";
 
 export default function ContactsView() {
   const contacts = useQuery(api.contacts.list) ?? [];
@@ -10,8 +13,26 @@ export default function ContactsView() {
   const create = useMutation(api.contacts.create);
   const modal = useModal();
 
+  const [sort, setSort] = useState<Sort>("namn");
+  const today = new Date().toISOString().slice(0, 10);
+
   const leadCount = (id: Id<"contacts">) =>
     leads.filter((l) => l.contactId === id).length;
+
+  const sorted = [...contacts].sort((a, b) => {
+    if (sort === "reminder") {
+      const ad = a.reminderDatum ?? null;
+      const bd = b.reminderDatum ?? null;
+      if (ad && bd && ad !== bd) return ad < bd ? -1 : 1; // earliest first (ISO dates)
+      if (ad && !bd) return -1; // contacts with a reminder before those without
+      if (!ad && bd) return 1;
+    } else if (sort === "note") {
+      const an = a.lastNoteAt ?? 0;
+      const bn = b.lastNoteAt ?? 0;
+      if (an !== bn) return bn - an; // most recent note first
+    }
+    return a.namn.localeCompare(b.namn, "sv");
+  });
 
   async function createContact() {
     const id = await create({ namn: "Namnlös kontakt", foretag: "", epost: "", telefon: "" });
@@ -26,6 +47,14 @@ export default function ContactsView() {
           <div className="lead-sub">Kunddatabas – personer kopplade till dina affärer.</div>
         </div>
         <div className="spacer"></div>
+        <label className="sort-control">
+          Sortera
+          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+            <option value="namn">Namn</option>
+            <option value="reminder">Påminnelsedatum</option>
+            <option value="note">Senaste anteckning</option>
+          </select>
+        </label>
         <button className="btn btn-primary" onClick={createContact}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
             <path d="M12 5v14M5 12h14"/>
@@ -53,10 +82,11 @@ export default function ContactsView() {
                   <th>E-post</th>
                   <th>Telefon</th>
                   <th>Affärer</th>
+                  <th>Påminnelse</th>
                 </tr>
               </thead>
               <tbody>
-                {contacts.map((c) => {
+                {sorted.map((c) => {
                   const n = leadCount(c._id);
                   return (
                     <tr
@@ -85,6 +115,18 @@ export default function ContactsView() {
                       <td className="muted">{c.telefon || "—"}</td>
                       <td>
                         <span className="pill">{n} {n === 1 ? "affär" : "affärer"}</span>
+                      </td>
+                      <td>
+                        {c.reminderDatum ? (
+                          <div className="rem-cell">
+                            <span className={"rem-date" + (c.reminderDatum < today ? " overdue" : "")}>
+                              {fmtDate(c.reminderDatum)}
+                            </span>
+                            {c.reminderText ? <span className="rem-text">{c.reminderText}</span> : null}
+                          </div>
+                        ) : (
+                          <span className="muted">—</span>
+                        )}
                       </td>
                     </tr>
                   );
