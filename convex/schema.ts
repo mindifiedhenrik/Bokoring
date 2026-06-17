@@ -26,12 +26,16 @@ export default defineSchema({
     beskrivning: v.string(),
     contactId: v.optional(v.id("contacts")),
     sannolikhet: v.number(),
-    agare: v.string(),
+    // agare: fritext (legacy) — tas bort i en senare task efter migrering.
+    agare: v.optional(v.string()),
+    agareId: v.optional(v.id("users")),
     datum: v.string(),
     steg: v.string(),
     log: v.array(logEntry),
     order: v.optional(v.number()),
-  }).index("by_contact", ["contactId"]),
+  })
+    .index("by_contact", ["contactId"])
+    .index("by_agare", ["agareId"]),
   projects: defineTable({
     namn: v.string(),
     beskrivning: v.string(),
@@ -43,7 +47,8 @@ export default defineSchema({
     beskrivning: v.string(),
     projectId: v.id("projects"),
     status: v.string(),
-    agare: v.string(),
+    agare: v.optional(v.string()),
+    agareId: v.optional(v.id("users")),
     prioritet: v.string(),
     archived: v.boolean(),
     archivedAt: v.optional(v.union(v.string(), v.null())),
@@ -51,7 +56,12 @@ export default defineSchema({
     order: v.optional(v.number()),
   })
     .index("by_project", ["projectId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_agare", ["agareId"]),
+  userProfiles: defineTable({
+    userId: v.id("users"),
+    displayName: v.string(),
+  }).index("by_user", ["userId"]),
   settings: defineTable({
     archiveDays: v.number(),
     pileThreshold: v.number(),
