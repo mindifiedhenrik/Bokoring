@@ -9,8 +9,10 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as contacts from "../contacts.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
+import type * as leads from "../leads.js";
 
 import type {
   ApiFromModules,
@@ -20,8 +22,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  contacts: typeof contacts;
   helpers: typeof helpers;
   http: typeof http;
+  leads: typeof leads;
 }>;
 
 /**

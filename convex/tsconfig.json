@@ -12,8 +12,8 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
 
-    /* Allow process.env in auth.config.ts */
-    "types": ["node"],
+    /* Allow process.env in auth.config.ts; vite/client for import.meta.glob in tests */
+    "types": ["node", "vite/client"],
 
     /* These compiler options are required by Convex */
     "target": "ESNext",
