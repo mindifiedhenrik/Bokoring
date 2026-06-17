@@ -33,6 +33,10 @@ npx convex dev
 # Engångs — provisionerar auth-nycklar (JWT_PRIVATE_KEY, JWKS, SITE_URL).
 npx @convex-dev/auth
 
+# Engångs — sätt registreringskoden. KRÄVS innan någon kan registrera sig.
+# Dela koden bara med dem som ska få konto. Rotera vid behov med samma kommando.
+npx convex env set SIGNUP_CODE "din-hemliga-kod"
+
 # Engångs — fyller en tom databas med demodata.
 npx convex run seed:run
 
@@ -41,7 +45,14 @@ npm run dev
 ```
 
 Öppna adressen som visas (t.ex. http://localhost:5173), registrera ett konto
-och logga in. All data delas mellan inloggade användare.
+(kräver registreringskoden ovan) och logga in. Alla inloggade delar samma data.
+
+### Åtkomst
+
+Registrering är spärrad bakom `SIGNUP_CODE` — utan rätt kod kan inga nya konton
+skapas, så bara personer du delar koden med kommer in i den delade arbetsytan.
+Inloggning för befintliga konton kräver ingen kod. Notera att alla inloggade
+har full läs/skriv-åtkomst (en gemensam arbetsyta, inga roller).
 
 ## Test
 
