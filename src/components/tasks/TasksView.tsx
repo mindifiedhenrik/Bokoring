@@ -14,11 +14,21 @@ export default function TasksView() {
   const tasks = useQuery(api.tasks.list) ?? [];
   const settings = useQuery(api.settings.get) ?? { archiveDays: 3, pileThreshold: 3 };
 
+  const users = useQuery(api.users.list) ?? [];
   const move = useMutation(api.tasks.move);
   const reorder = useMutation(api.tasks.reorder);
   const reorderProject = useMutation(api.projects.reorder);
+  const create = useMutation(api.tasks.create);
   const modal = useModal();
   const toast = useToast();
+
+  const ownerName = (id?: string) =>
+    users.find((u) => u._id === id)?.displayName ?? "—";
+
+  async function createTask(projectId: Id<"projects">, status: string) {
+    const id = await create({ titel: "Namnlös uppgift", beskrivning: "", projectId, status, prioritet: "Normal" });
+    modal.openTaskDetail(id);
+  }
 
   const [dragId, setDragId] = useState<Id<"tasks"> | null>(null);
   const [dragProjectId, setDragProjectId] = useState<Id<"projects"> | null>(null);
@@ -123,7 +133,7 @@ export default function TasksView() {
           </svg>
           Nytt projekt
         </button>
-        <button className="btn btn-primary" onClick={() => modal.openTaskForm()}>
+        <button className="btn btn-primary" onClick={() => { const p = projects[0]; if (p) createTask(p._id, "Backlog"); else modal.openProjectForm(); }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
             <path d="M12 5v14M5 12h14" />
           </svg>
@@ -252,7 +262,8 @@ export default function TasksView() {
                                     task={item}
                                     projectColor={p.color}
                                     archiveDays={archiveDays}
-                                    onClick={() => modal.openTaskForm(item._id)}
+                                    ownerName={ownerName(item.agareId)}
+                                    onClick={() => modal.openTaskDetail(item._id)}
                                     onDragStart={() => setDragId(item._id)}
                                     onDragEnd={clearDrag}
                                     onDragOver={(e) => {
@@ -279,7 +290,7 @@ export default function TasksView() {
                             )}
                           </>
                         )}
-                        <button className="cell-add" onClick={() => modal.openTaskForm(undefined, p._id, s)}>
+                        <button className="cell-add" onClick={() => createTask(p._id, s)}>
                           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
                             <path d="M12 5v14M5 12h14" />
                           </svg>

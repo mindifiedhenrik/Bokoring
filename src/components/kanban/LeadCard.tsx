@@ -6,13 +6,14 @@ import { initials } from "../../lib/format";
 interface LeadCardProps {
   lead: Doc<"leads">;
   contactName: string;
+  ownerName: string;
   onClick: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
   onDragOver?: (e: React.DragEvent) => void;
 }
 
-export default function LeadCard({ lead, contactName, onClick, onDragStart, onDragEnd, onDragOver }: LeadCardProps) {
+export default function LeadCard({ lead, contactName, ownerName, onClick, onDragStart, onDragEnd, onDragOver }: LeadCardProps) {
   const color = STAGE_VAR[lead.steg];
   const prob = lead.sannolikhet ?? 0;
 
@@ -43,7 +44,7 @@ export default function LeadCard({ lead, contactName, onClick, onDragStart, onDr
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
             <circle cx="12" cy="7" r="4"/>
           </svg>
-          {lead.agare || "—"}
+          {ownerName}
         </span>
       </div>
     </div>
