@@ -13,6 +13,8 @@ import type * as contacts from "../contacts.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
 import type * as leads from "../leads.js";
+import type * as projects from "../projects.js";
+import type * as tasks from "../tasks.js";
 
 import type {
   ApiFromModules,
@@ -26,6 +28,8 @@ declare const fullApi: ApiFromModules<{
   helpers: typeof helpers;
   http: typeof http;
   leads: typeof leads;
+  projects: typeof projects;
+  tasks: typeof tasks;
 }>;
 
 /**
