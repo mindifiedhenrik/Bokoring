@@ -31,6 +31,9 @@ export default defineSchema({
     contactId: v.optional(v.id("contacts")),
     sannolikhet: v.number(),
     agareId: v.optional(v.id("users")),
+    // Legacy free-text owner. Unused by the app (replaced by agareId); kept as an
+    // optional field so existing production documents validate without a migration.
+    agare: v.optional(v.string()),
     datum: v.string(),
     steg: v.string(),
     log: v.array(logEntry),
@@ -50,6 +53,8 @@ export default defineSchema({
     projectId: v.id("projects"),
     status: v.string(),
     agareId: v.optional(v.id("users")),
+    // Legacy free-text owner; see note on leads.agare.
+    agare: v.optional(v.string()),
     prioritet: v.string(),
     archived: v.boolean(),
     archivedAt: v.optional(v.union(v.string(), v.null())),
