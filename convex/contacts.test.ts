@@ -14,7 +14,7 @@ test("contacts.remove unlinks leads pointing to the contact", async () => {
   });
   const leadId = await u.mutation(api.leads.create, {
     titel: "Affär", beskrivning: "", contactId, sannolikhet: 20,
-    agare: "Maria", datum: "2026-06-16", steg: "Lead",
+    datum: "2026-06-16", steg: "Lead",
   });
 
   await u.mutation(api.contacts.remove, { id: contactId });
