@@ -18,7 +18,7 @@ test("projects.remove cascades to its tasks", async () => {
   const u = t.withIdentity({ name: "Test" });
   const projectId = await u.mutation(api.projects.create, { namn: "P", beskrivning: "" });
   await u.mutation(api.tasks.create, {
-    titel: "T", beskrivning: "", projectId, status: "Backlog", agare: "", prioritet: "Normal",
+    titel: "T", beskrivning: "", projectId, status: "Backlog", prioritet: "Normal",
   });
   await u.mutation(api.projects.remove, { id: projectId });
   expect(await u.query(api.tasks.list, {})).toHaveLength(0);

@@ -9,8 +9,8 @@ test("tasks.reorder changes list order", async () => {
   const t = convexTest(schema, modules);
   const u = t.withIdentity({ name: "Test" });
   const projectId = await u.mutation(api.projects.create, { namn: "P", beskrivning: "" });
-  const a = await u.mutation(api.tasks.create, { titel: "A", beskrivning: "", projectId, status: "Backlog", agare: "", prioritet: "Normal" });
-  const b = await u.mutation(api.tasks.create, { titel: "B", beskrivning: "", projectId, status: "Backlog", agare: "", prioritet: "Normal" });
+  const a = await u.mutation(api.tasks.create, { titel: "A", beskrivning: "", projectId, status: "Backlog", prioritet: "Normal" });
+  const b = await u.mutation(api.tasks.create, { titel: "B", beskrivning: "", projectId, status: "Backlog", prioritet: "Normal" });
   // A was created first so sorts before B initially.
   let list = await u.query(api.tasks.list, {});
   expect(list.map((x) => x._id)).toEqual([a, b]);

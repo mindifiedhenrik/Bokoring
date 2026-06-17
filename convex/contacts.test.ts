@@ -14,7 +14,7 @@ test("contacts.remove unlinks leads pointing to the contact", async () => {
   });
   const leadId = await u.mutation(api.leads.create, {
     titel: "Affär", beskrivning: "", contactId, sannolikhet: 20,
-    agare: "Maria", datum: "2026-06-16", steg: "Lead",
+    datum: "2026-06-16", steg: "Lead",
   });
 
   await u.mutation(api.contacts.remove, { id: contactId });
@@ -29,4 +29,63 @@ test("contacts.remove unlinks leads pointing to the contact", async () => {
 test("contacts functions reject unauthenticated callers", async () => {
   const t = convexTest(schema, modules);
   await expect(t.query(api.contacts.list, {})).rejects.toThrow("Inte inloggad");
+});
+
+test("contacts.list augmenterar med senaste anteckningens tidsstämpel", async () => {
+  const t = convexTest(schema, modules);
+  const { userId, contactId } = await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { email: "a@b.se" });
+    const contactId = await ctx.db.insert("contacts", { namn: "C", foretag: "", epost: "", telefon: "" });
+    return { userId, contactId };
+  });
+  const u = t.withIdentity({ subject: `${userId}|s` });
+
+  let listed = await u.query(api.contacts.list, {});
+  expect(listed.find((c) => c._id === contactId)!.lastNoteAt).toBeNull();
+
+  await u.mutation(api.notes.add, { contactId, text: "En" });
+  listed = await u.query(api.contacts.list, {});
+  expect(listed.find((c) => c._id === contactId)!.lastNoteAt).toBeTypeOf("number");
+});
+
+test("hasUnread blir sant vid ny anteckning och nollställs av markRead", async () => {
+  const t = convexTest(schema, modules);
+  const { userId, contactId } = await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { email: "a@b.se" });
+    const contactId = await ctx.db.insert("contacts", { namn: "C", foretag: "", epost: "", telefon: "" });
+    return { userId, contactId };
+  });
+  const u = t.withIdentity({ subject: `${userId}|s` });
+
+  const get = async () => (await u.query(api.contacts.list, {})).find((c) => c._id === contactId)!;
+
+  expect((await get()).hasUnread).toBe(false); // inga anteckningar
+  await u.mutation(api.notes.add, { contactId, text: "Ny" });
+  expect((await get()).hasUnread).toBe(true); // ny oläst anteckning
+  await u.mutation(api.contacts.markRead, { id: contactId });
+  expect((await get()).hasUnread).toBe(false); // läst
+});
+
+test("contacts.setReminder och clearReminder sätter/nollställer påminnelsen", async () => {
+  const t = convexTest(schema, modules);
+  const { userId, contactId } = await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { email: "a@b.se" });
+    const contactId = await ctx.db.insert("contacts", { namn: "C", foretag: "", epost: "", telefon: "" });
+    return { userId, contactId };
+  });
+  const u = t.withIdentity({ subject: `${userId}|s` });
+
+  await u.mutation(api.contacts.setReminder, {
+    id: contactId, agareId: userId, datum: "2026-07-01", text: "  Ring upp  ",
+  });
+  let c = (await u.query(api.contacts.list, {})).find((x) => x._id === contactId)!;
+  expect(c.reminderDatum).toBe("2026-07-01");
+  expect(c.reminderText).toBe("Ring upp");
+  expect(c.reminderAgareId).toBe(userId);
+
+  await u.mutation(api.contacts.clearReminder, { id: contactId });
+  c = (await u.query(api.contacts.list, {})).find((x) => x._id === contactId)!;
+  expect(c.reminderDatum).toBeUndefined();
+  expect(c.reminderText).toBeUndefined();
+  expect(c.reminderAgareId).toBeUndefined();
 });

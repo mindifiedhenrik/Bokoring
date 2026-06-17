@@ -11,7 +11,7 @@ test("archive sweep archives Done tasks older than the threshold", async () => {
   await u.mutation(api.settings.set, { archiveDays: 3, pileThreshold: 3 });
   const projectId = await u.mutation(api.projects.create, { namn: "P", beskrivning: "" });
   const id = await u.mutation(api.tasks.create, {
-    titel: "Old", beskrivning: "", projectId, status: "Done", agare: "", prioritet: "Normal",
+    titel: "Old", beskrivning: "", projectId, status: "Done", prioritet: "Normal",
   });
 
   // Backdate the task's only log entry to 5 days ago.

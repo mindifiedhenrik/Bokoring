@@ -9,7 +9,7 @@ test("leads.create logs the initial stage", async () => {
   const t = convexTest(schema, modules);
   const u = t.withIdentity({ name: "Test" });
   const id = await u.mutation(api.leads.create, {
-    titel: "X", beskrivning: "", sannolikhet: 10, agare: "M", datum: "2026-06-16", steg: "Lead",
+    titel: "X", beskrivning: "", sannolikhet: 10, datum: "2026-06-16", steg: "Lead",
   });
   const lead = (await u.query(api.leads.list, {})).find((l) => l._id === id)!;
   expect(lead.log).toHaveLength(1);
@@ -20,7 +20,7 @@ test("leads.move appends a stage-change log entry", async () => {
   const t = convexTest(schema, modules);
   const u = t.withIdentity({ name: "Test" });
   const id = await u.mutation(api.leads.create, {
-    titel: "X", beskrivning: "", sannolikhet: 10, agare: "M", datum: "2026-06-16", steg: "Lead",
+    titel: "X", beskrivning: "", sannolikhet: 10, datum: "2026-06-16", steg: "Lead",
   });
   await u.mutation(api.leads.move, { id, steg: "Kvalificerat" });
   const lead = (await u.query(api.leads.list, {})).find((l) => l._id === id)!;

@@ -19,10 +19,10 @@ export const run = internalMutation({
     ]) c.push(await ctx.db.insert("contacts", data));
 
     const leadSeed = [
-      { titel: "Webbplattform & integration", beskrivning: "Behöver ny kundportal med ERP-koppling. Budget bekräftad.", contactId: c[0], sannolikhet: 30, agare: "Maria Ek", datum: tAgo(2).slice(0, 10), steg: "Lead" },
-      { titel: "Lageroptimering Q3", beskrivning: "Utvärderar system för lagerstyrning inför expansion.", contactId: c[1], sannolikhet: 55, agare: "David Ström", datum: tAgo(5).slice(0, 10), steg: "Kvalificerat" },
-      { titel: "Varumärkesidentitet", beskrivning: "Rebranding inklusive ny visuell profil och webb.", contactId: c[2], sannolikhet: 70, agare: "Maria Ek", datum: tAgo(9).slice(0, 10), steg: "Förslag" },
-      { titel: "Vindkraft – serviceavtal", beskrivning: "Femårigt serviceavtal för turbinpark. Offert skickad.", contactId: c[3], sannolikhet: 85, agare: "David Ström", datum: tAgo(14).slice(0, 10), steg: "Offererat" },
+      { titel: "Webbplattform & integration", beskrivning: "Behöver ny kundportal med ERP-koppling. Budget bekräftad.", contactId: c[0], sannolikhet: 30, datum: tAgo(2).slice(0, 10), steg: "Lead" },
+      { titel: "Lageroptimering Q3", beskrivning: "Utvärderar system för lagerstyrning inför expansion.", contactId: c[1], sannolikhet: 55, datum: tAgo(5).slice(0, 10), steg: "Kvalificerat" },
+      { titel: "Varumärkesidentitet", beskrivning: "Rebranding inklusive ny visuell profil och webb.", contactId: c[2], sannolikhet: 70, datum: tAgo(9).slice(0, 10), steg: "Förslag" },
+      { titel: "Vindkraft – serviceavtal", beskrivning: "Femårigt serviceavtal för turbinpark. Offert skickad.", contactId: c[3], sannolikhet: 85, datum: tAgo(14).slice(0, 10), steg: "Offererat" },
     ];
     for (const l of leadSeed) {
       await ctx.db.insert("leads", { ...l, log: [{ ts: new Date().toISOString(), from: null, to: l.steg }] });
@@ -37,17 +37,17 @@ export const run = internalMutation({
     }
 
     const taskSeed = [
-      { titel: "Kravinsamling & workshops", projectId: p[0], status: "Done", agare: "Maria Ek", prioritet: "Hög", daysAgo: 2 },
-      { titel: "Wireframes för portalen", projectId: p[0], status: "In Review", agare: "Sofia Holm", prioritet: "Normal", daysAgo: 1 },
-      { titel: "API-integration mot ERP", projectId: p[0], status: "In Progress", agare: "David Ström", prioritet: "Hög", daysAgo: 0 },
-      { titel: "Inloggningsflöde (SSO)", projectId: p[0], status: "Todo", agare: "David Ström", prioritet: "Normal", daysAgo: 3 },
-      { titel: "Felhantering & loggning", projectId: p[0], status: "Todo", agare: "David Ström", prioritet: "Normal", daysAgo: 2 },
-      { titel: "E-postnotiser", projectId: p[0], status: "Todo", agare: "Maria Ek", prioritet: "Låg", daysAgo: 1 },
-      { titel: "Användardokumentation", projectId: p[0], status: "Todo", agare: "", prioritet: "Låg", daysAgo: 0 },
-      { titel: "Prestandatester", projectId: p[0], status: "Backlog", agare: "", prioritet: "Låg", daysAgo: 5 },
-      { titel: "Moodboard & research", projectId: p[1], status: "Done", agare: "Sofia Holm", prioritet: "Normal", daysAgo: 2 },
-      { titel: "Logotypförslag", projectId: p[1], status: "In Progress", agare: "Sofia Holm", prioritet: "Hög", daysAgo: 1 },
-      { titel: "Färgpalett & typografi", projectId: p[1], status: "Todo", agare: "Maria Ek", prioritet: "Normal", daysAgo: 4 },
+      { titel: "Kravinsamling & workshops", projectId: p[0], status: "Done", prioritet: "Hög", daysAgo: 2 },
+      { titel: "Wireframes för portalen", projectId: p[0], status: "In Review", prioritet: "Normal", daysAgo: 1 },
+      { titel: "API-integration mot ERP", projectId: p[0], status: "In Progress", prioritet: "Hög", daysAgo: 0 },
+      { titel: "Inloggningsflöde (SSO)", projectId: p[0], status: "Todo", prioritet: "Normal", daysAgo: 3 },
+      { titel: "Felhantering & loggning", projectId: p[0], status: "Todo", prioritet: "Normal", daysAgo: 2 },
+      { titel: "E-postnotiser", projectId: p[0], status: "Todo", prioritet: "Låg", daysAgo: 1 },
+      { titel: "Användardokumentation", projectId: p[0], status: "Todo", prioritet: "Låg", daysAgo: 0 },
+      { titel: "Prestandatester", projectId: p[0], status: "Backlog", prioritet: "Låg", daysAgo: 5 },
+      { titel: "Moodboard & research", projectId: p[1], status: "Done", prioritet: "Normal", daysAgo: 2 },
+      { titel: "Logotypförslag", projectId: p[1], status: "In Progress", prioritet: "Hög", daysAgo: 1 },
+      { titel: "Färgpalett & typografi", projectId: p[1], status: "Todo", prioritet: "Normal", daysAgo: 4 },
     ];
     for (const { daysAgo, ...rest } of taskSeed) {
       await ctx.db.insert("tasks", {

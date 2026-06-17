@@ -6,15 +6,24 @@ import { STAGES, STAGE_VAR } from "../../lib/constants";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
 import { orderForIndex, insertIndexFromHint, type DropHint } from "../../lib/ordering";
+import { ownerName } from "../../lib/users";
 import LeadCard from "./LeadCard";
 
 export default function PipelineView() {
   const leads = useQuery(api.leads.list) ?? [];
   const contacts = useQuery(api.contacts.list) ?? [];
+  const users = useQuery(api.users.list) ?? [];
   const move = useMutation(api.leads.move);
   const reorder = useMutation(api.leads.reorder);
+  const create = useMutation(api.leads.create);
   const modal = useModal();
   const toast = useToast();
+
+  async function createLead(stage: string) {
+    const today = new Date().toISOString().slice(0, 10);
+    const id = await create({ titel: "Namnlöst lead", beskrivning: "", sannolikhet: 25, datum: today, steg: stage });
+    modal.openLeadDetail(id);
+  }
 
   const [dragId, setDragId] = useState<Id<"leads"> | null>(null);
   const [overStage, setOverStage] = useState<string | null>(null);
@@ -57,7 +66,7 @@ export default function PipelineView() {
           </div>
         </div>
         <div className="spacer"></div>
-        <button className="btn btn-primary" onClick={() => modal.openLeadForm()}>
+        <button className="btn btn-primary" onClick={() => createLead("Lead")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
             <path d="M12 5v14M5 12h14"/>
           </svg>
@@ -103,6 +112,7 @@ export default function PipelineView() {
                           <LeadCard
                             lead={lead}
                             contactName={contactName}
+                            ownerName={ownerName(users, lead.agareId)}
                             onClick={() => modal.openLeadDetail(lead._id)}
                             onDragStart={() => setDragId(lead._id)}
                             onDragEnd={clearDrag}
@@ -125,7 +135,7 @@ export default function PipelineView() {
               </div>
               <button
                 className="add-card"
-                onClick={() => modal.openLeadForm(undefined, stage)}
+                onClick={() => createLead(stage)}
               >
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
                   <path d="M12 5v14M5 12h14"/>

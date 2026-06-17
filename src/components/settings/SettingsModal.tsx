@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { fmtDate } from "../../lib/format";
@@ -24,11 +24,21 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
   const projects = useQuery(api.projects.list) ?? [];
   const setSettings = useMutation(api.settings.set);
   const restore = useMutation(api.tasks.restore);
+  const myProfile = useQuery(api.userProfiles.myProfile);
+  const users = useQuery(api.users.list) ?? [];
+  const setMyName = useMutation(api.userProfiles.setMyName);
+  const removeUser = useMutation(api.users.remove);
   const modal = useModal();
   const toast = useToast();
 
   const [pile, setPile] = useState(String(initial.pileThreshold));
   const [archive, setArchive] = useState(String(initial.archiveDays));
+  const [name, setName] = useState("");
+  const [nameInit, setNameInit] = useState(false);
+
+  useEffect(() => {
+    if (myProfile && !nameInit) { setName(myProfile.displayName); setNameInit(true); }
+  }, [myProfile, nameInit]);
 
   const archived = tasks
     .filter((t) => t.archived)
@@ -57,7 +67,22 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
       </div>
 
       <div className="modal-body">
-        <div className="section-label">Registreringskod</div>
+        <div className="section-label">Min profil</div>
+        <div className="field">
+          <label>Visningsnamn</label>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <input type="text" value={name} placeholder={myProfile?.email ?? "Ditt namn"}
+              onChange={(e) => setName(e.target.value)} style={{ flex: 1 }} />
+            <button className="btn btn-ghost" onClick={async () => { await setMyName({ displayName: name }); toast("Namn sparat"); }}>
+              Spara namn
+            </button>
+          </div>
+          <div className="muted" style={{ fontSize: "12.5px", marginTop: "7px" }}>
+            Namnet visas som ansvarig på kort. Lämnas det tomt används din e-post.
+          </div>
+        </div>
+
+        <div className="section-label" style={{ marginTop: "14px" }}>Registreringskod</div>
         <div className="field">
           <label>Kod för att skapa konto</label>
           {initial.signupCode ? (
@@ -95,6 +120,30 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
               Ingen kod är satt. Sätt den med <code>npx convex env set SIGNUP_CODE "…"</code> för att tillåta registrering.
             </div>
           )}
+        </div>
+
+        <div className="section-label" style={{ marginTop: "14px" }}>Användare ({users.length})</div>
+        <div className="arch-list">
+          {users.map((u) => (
+            <div key={u._id} className="arch-item">
+              <span className="avatar">{(u.displayName[0] ?? "?").toUpperCase()}</span>
+              <div className="ai-body">
+                <div style={{ fontWeight: 600, fontSize: "13.5px" }}>
+                  {u.displayName}{u.isSelf ? " (du)" : ""}
+                </div>
+                <div className="muted" style={{ fontSize: "12px" }}>{u.email ?? "—"}</div>
+              </div>
+              {!u.isSelf && (
+                <button className="btn btn-ghost" onClick={async () => {
+                  if (!confirm(`Ta bort användaren "${u.displayName}"? Kort där hen är ansvarig blir utan ansvarig.`)) return;
+                  await removeUser({ userId: u._id });
+                  toast("Användare borttagen");
+                }}>
+                  Ta bort
+                </button>
+              )}
+            </div>
+          ))}
         </div>
 
         <div className="section-label" style={{ marginTop: "14px" }}>Högar</div>

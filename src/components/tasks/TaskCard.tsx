@@ -7,13 +7,14 @@ interface TaskCardProps {
   task: Doc<"tasks">;
   projectColor: string;
   archiveDays: number;
+  ownerName: string | null;
   onClick: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
   onDragOver?: (e: React.DragEvent) => void;
 }
 
-export default function TaskCard({ task, projectColor, archiveDays, onClick, onDragStart, onDragEnd, onDragOver }: TaskCardProps) {
+export default function TaskCard({ task, projectColor, archiveDays, ownerName, onClick, onDragStart, onDragEnd, onDragOver }: TaskCardProps) {
   const cls = PRIORITY_CLASS[task.prioritet] ?? "normal";
   const days = daysSinceMove(task);
   // Highlight when a Done card is one day away from being archived.
@@ -38,7 +39,7 @@ export default function TaskCard({ task, projectColor, archiveDays, onClick, onD
       <h4>{task.titel}</h4>
       <div className="tm">
         <span className={"prio " + cls}>{task.prioritet || "Normal"}</span>
-        {task.agare ? <span className="task-owner">{task.agare}</span> : null}
+        {ownerName ? <span className="task-owner">{ownerName}</span> : null}
       </div>
     </div>
   );

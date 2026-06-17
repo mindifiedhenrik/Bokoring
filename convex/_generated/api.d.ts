@@ -14,10 +14,12 @@ import type * as crons from "../crons.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
 import type * as leads from "../leads.js";
+import type * as notes from "../notes.js";
 import type * as projects from "../projects.js";
 import type * as seed from "../seed.js";
 import type * as settings from "../settings.js";
 import type * as tasks from "../tasks.js";
+import type * as userProfiles from "../userProfiles.js";
 import type * as users from "../users.js";
 
 import type {
@@ -33,10 +35,12 @@ declare const fullApi: ApiFromModules<{
   helpers: typeof helpers;
   http: typeof http;
   leads: typeof leads;
+  notes: typeof notes;
   projects: typeof projects;
   seed: typeof seed;
   settings: typeof settings;
   tasks: typeof tasks;
+  userProfiles: typeof userProfiles;
   users: typeof users;
 }>;
 
