@@ -26,8 +26,6 @@ export default defineSchema({
     beskrivning: v.string(),
     contactId: v.optional(v.id("contacts")),
     sannolikhet: v.number(),
-    // agare: fritext (legacy) — tas bort i en senare task efter migrering.
-    agare: v.optional(v.string()),
     agareId: v.optional(v.id("users")),
     datum: v.string(),
     steg: v.string(),
@@ -47,7 +45,6 @@ export default defineSchema({
     beskrivning: v.string(),
     projectId: v.id("projects"),
     status: v.string(),
-    agare: v.optional(v.string()),
     agareId: v.optional(v.id("users")),
     prioritet: v.string(),
     archived: v.boolean(),
