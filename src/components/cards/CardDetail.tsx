@@ -14,6 +14,7 @@ import CardLog from "./CardLog";
 type Props = { type: "lead"; id: Id<"leads"> } | { type: "task"; id: Id<"tasks"> };
 
 const NONE = "__none__";
+const NEW_CONTACT = "__new_contact__";
 
 export default function CardDetail(props: Props) {
   const { type } = props;
@@ -26,6 +27,7 @@ export default function CardDetail(props: Props) {
   const updateTask = useMutation(api.tasks.update);
   const removeLead = useMutation(api.leads.remove);
   const removeTask = useMutation(api.tasks.remove);
+  const createContact = useMutation(api.contacts.create);
   const modal = useModal();
   const toast = useToast();
   const [tab, setTab] = useState<"info" | "log">("info");
@@ -102,7 +104,11 @@ export default function CardDetail(props: Props) {
                     <div className="k">Kundkontakt</div>
                     <div className="v">
                       <InlineField type="select" label="" value={lead.contactId ?? NONE}
-                        options={[{ value: NONE, label: "Ingen kontakt" }, ...contacts.map((c) => ({ value: c._id as string, label: c.namn + (c.foretag ? " · " + c.foretag : "") }))]}
+                        options={[
+                          { value: NONE, label: "Ingen kontakt" },
+                          { value: NEW_CONTACT, label: "➕ Skapa ny kontakt" },
+                          ...contacts.map((c) => ({ value: c._id as string, label: c.namn + (c.foretag ? " · " + c.foretag : "") })),
+                        ]}
                         render={(v) => {
                           const c = contacts.find((x) => x._id === v);
                           return c ? (
@@ -112,7 +118,16 @@ export default function CardDetail(props: Props) {
                             </span>
                           ) : <span className="muted">Ingen kontakt kopplad</span>;
                         }}
-                        onSave={(v) => saveLead({ contactId: v === NONE ? undefined : (v as Id<"contacts">) })} />
+                        onSave={async (v) => {
+                          if (v === NEW_CONTACT) {
+                            // Create a blank contact, link it to this lead, and open it for naming.
+                            const cid = await createContact({ namn: "Namnlös kontakt", foretag: "", epost: "", telefon: "" });
+                            await saveLead({ contactId: cid });
+                            modal.openContactDetail(cid);
+                            return;
+                          }
+                          await saveLead({ contactId: v === NONE ? undefined : (v as Id<"contacts">) });
+                        }} />
                     </div>
                   </div>
                   <InlineField type="number" label="Sannolikhet" value={lead.sannolikhet} min={0} max={100} step={5} suffix="%"
