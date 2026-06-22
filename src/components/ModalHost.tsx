@@ -13,7 +13,7 @@ export default function ModalHost() {
       ) : (
         <CardDetail type="task" id={m.state.id} />
       );
-    case "contactDetail": return <ContactDetail id={m.state.id} />;
+    case "contactDetail": return <ContactDetail id={m.state.id} returnLeadId={m.state.returnLeadId} />;
     case "projectForm": return <ProjectForm id={m.state.id} />;
     case "settings": return <SettingsModal />;
     default: return null;

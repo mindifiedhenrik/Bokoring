@@ -112,7 +112,7 @@ export default function CardDetail(props: Props) {
                         render={(v) => {
                           const c = contacts.find((x) => x._id === v);
                           return c ? (
-                            <span className="contact-chip" onClick={(e) => { e.stopPropagation(); modal.openContactDetail(c._id); }}>
+                            <span className="contact-chip" onClick={(e) => { e.stopPropagation(); modal.openContactDetail(c._id, lead._id); }}>
                               <span className="avatar">{initials(c.namn)}</span>
                               <span style={{ fontWeight: 600 }}>{c.namn}</span>
                             </span>
@@ -123,7 +123,7 @@ export default function CardDetail(props: Props) {
                             // Create a blank contact, link it to this lead, and open it for naming.
                             const cid = await createContact({ namn: "Namnlös kontakt", foretag: "", epost: "", telefon: "" });
                             await saveLead({ contactId: cid });
-                            modal.openContactDetail(cid);
+                            modal.openContactDetail(cid, lead!._id);
                             return;
                           }
                           await saveLead({ contactId: v === NONE ? undefined : (v as Id<"contacts">) });

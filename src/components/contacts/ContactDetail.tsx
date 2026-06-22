@@ -13,9 +13,10 @@ import ContactNotes from "./ContactNotes";
 
 interface ContactDetailProps {
   id: Id<"contacts">;
+  returnLeadId?: Id<"leads">;
 }
 
-export default function ContactDetail({ id }: ContactDetailProps) {
+export default function ContactDetail({ id, returnLeadId }: ContactDetailProps) {
   const contacts = useQuery(api.contacts.list) ?? [];
   const leads = useQuery(api.leads.list) ?? [];
   const update = useMutation(api.contacts.update);
@@ -140,7 +141,12 @@ export default function ContactDetail({ id }: ContactDetailProps) {
       <div className="modal-foot">
         <button className="btn btn-danger" onClick={del}>Ta bort</button>
         <div className="spacer"></div>
-        <button className="btn btn-ghost" onClick={modal.close}>Stäng</button>
+        {returnLeadId ? (
+          // Opened from a lead — fields auto-save inline, so "Spara" just returns to the card.
+          <button className="btn btn-primary" onClick={() => modal.openLeadDetail(returnLeadId)}>Spara</button>
+        ) : (
+          <button className="btn btn-ghost" onClick={modal.close}>Stäng</button>
+        )}
       </div>
     </Modal>
   );
