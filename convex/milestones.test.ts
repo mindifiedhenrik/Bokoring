@@ -31,3 +31,24 @@ test("milestones.list only returns the active org's milestones", async () => {
   expect(await orgB.as.query(api.milestones.list, {})).toHaveLength(0);
   expect((await orgA.as.query(api.milestones.list, {})).map((m) => m.titel)).toEqual(["A-ms"]);
 });
+
+test("milestones.setDate moves the milestone and logs the change", async () => {
+  const t = convexTest(schema, modules);
+  const { as: u } = await setupOrg(t);
+  const id = await u.mutation(api.milestones.create, { titel: "M", beskrivning: "", datum: "2026-03-01", color: "#c45b32" });
+  await u.mutation(api.milestones.setDate, { id, datum: "2026-04-15" });
+  const m = (await u.query(api.milestones.list, {})).find((x) => x._id === id)!;
+  expect(m.datum).toBe("2026-04-15");
+  expect(m.log.at(-1)).toMatchObject({ from: "2026-03-01", to: "2026-04-15" });
+});
+
+test("milestones.update changes fields and logs date changes", async () => {
+  const t = convexTest(schema, modules);
+  const { as: u } = await setupOrg(t);
+  const id = await u.mutation(api.milestones.create, { titel: "M", beskrivning: "", datum: "2026-03-01", color: "#c45b32" });
+  await u.mutation(api.milestones.update, { id, titel: "Ny titel", beskrivning: "x", datum: "2026-05-01", color: "#4f7a52" });
+  const m = (await u.query(api.milestones.list, {})).find((x) => x._id === id)!;
+  expect(m.titel).toBe("Ny titel");
+  expect(m.color).toBe("#4f7a52");
+  expect(m.log.at(-1)).toMatchObject({ from: "2026-03-01", to: "2026-05-01" });
+});

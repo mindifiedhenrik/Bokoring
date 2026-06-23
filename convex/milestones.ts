@@ -31,3 +31,28 @@ export const create = mutation({
     return await ctx.db.insert("milestones", { ...args, orgId, taskIds: [], log, order: Date.now() });
   },
 });
+
+export const update = mutation({
+  args: { id: v.id("milestones"), ...fields },
+  handler: async (ctx, { id, ...patch }) => {
+    const { orgId } = await requireOrg(ctx);
+    const prev = await ctx.db.get("milestones", id);
+    if (!prev || prev.orgId !== orgId) throw new Error("Milstolpe saknas");
+    const log = [...prev.log];
+    if (prev.datum !== patch.datum) {
+      log.push({ ts: new Date().toISOString(), from: prev.datum, to: patch.datum });
+    }
+    await ctx.db.patch("milestones", id, { ...patch, log });
+  },
+});
+
+export const setDate = mutation({
+  args: { id: v.id("milestones"), datum: v.string() },
+  handler: async (ctx, { id, datum }) => {
+    const { orgId } = await requireOrg(ctx);
+    const prev = await ctx.db.get("milestones", id);
+    if (!prev || prev.orgId !== orgId || prev.datum === datum) return;
+    const log = [...prev.log, { ts: new Date().toISOString(), from: prev.datum, to: datum }];
+    await ctx.db.patch("milestones", id, { datum, log });
+  },
+});
