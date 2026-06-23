@@ -600,3 +600,20 @@
   display: inline-block; width: 8px; height: 8px; border-radius: 50%;
   background: #2f6fed; margin-left: 7px; vertical-align: middle;
 }
+
+.org-switcher,
+.org-name {
+  margin: 4px 0 10px;
+  font-size: 13px;
+  color: var(--ink, #2c2c2c);
+}
+.org-switcher {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line, #ddd);
+  border-radius: 8px;
+  background: transparent;
+}
+.org-name {
+  font-weight: 600;
+}
