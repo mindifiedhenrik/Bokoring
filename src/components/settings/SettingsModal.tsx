@@ -19,7 +19,7 @@ export default function SettingsModal() {
   return <SettingsBody initial={settings} />;
 }
 
-function SettingsBody({ initial }: { initial: { archiveDays: number; pileThreshold: number; signupCode: string | null } }) {
+function SettingsBody({ initial }: { initial: { archiveDays: number; pileThreshold: number; joinCode: string | null } }) {
   const tasks = useQuery(api.tasks.list) ?? [];
   const projects = useQuery(api.projects.list) ?? [];
   const setSettings = useMutation(api.settings.set);
@@ -85,15 +85,15 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
         <div className="section-label" style={{ marginTop: "14px" }}>Registreringskod</div>
         <div className="field">
           <label>Kod för att skapa konto</label>
-          {initial.signupCode ? (
+          {initial.joinCode ? (
             <>
               <div style={{ display: "flex", gap: "8px" }}>
-                <input type="text" readOnly value={initial.signupCode} style={{ flex: 1 }} />
+                <input type="text" readOnly value={initial.joinCode} style={{ flex: 1 }} />
                 <button
                   className="btn btn-ghost"
                   onClick={async () => {
                     try {
-                      await navigator.clipboard.writeText(initial.signupCode!);
+                      await navigator.clipboard.writeText(initial.joinCode!);
                       toast("Kod kopierad");
                     } catch {
                       toast("Kunde inte kopiera");
@@ -108,7 +108,7 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
                 <a
                   style={{ color: "var(--accent-deep)" }}
                   href={`mailto:?subject=${encodeURIComponent("Inbjudan till Boköring CRM")}&body=${encodeURIComponent(
-                    `Hej!\n\nDu kan skapa ett konto i Boköring CRM med den här registreringskoden:\n\n${initial.signupCode}\n\nÖppna appen, välj "Registrera" och ange koden.`,
+                    `Hej!\n\nDu kan gå med i vår organisation i Boköring CRM med den här anslutningskoden:\n\n${initial.joinCode}\n\nÖppna appen och ange koden för att gå med.`,
                   )}`}
                 >
                   Skicka i mejl
@@ -117,7 +117,7 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
             </>
           ) : (
             <div className="muted" style={{ fontSize: "12.5px" }}>
-              Ingen kod är satt. Sätt den med <code>npx convex env set SIGNUP_CODE "…"</code> för att tillåta registrering.
+              Ingen anslutningskod hittades.
             </div>
           )}
         </div>
