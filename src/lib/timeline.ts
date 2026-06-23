@@ -7,9 +7,9 @@ const MS_PER_DAY = 86400000;
 export const ZOOM_LEVELS = [2, 4, 8, 16, 32] as const;
 export const DEFAULT_ZOOM_INDEX = 2; // 8 px/day
 
-// Approximate milestone card footprint (card width + gutter) used by auto-arrange
-// to decide whether two milestones can share a row without overlapping.
-export const CARD_WIDTH_PX = 165;
+// Approximate milestone card footprint (card width + breathing room) used by
+// auto-arrange to decide whether two milestones can share a row.
+export const CARD_WIDTH_PX = 184;
 
 // Whole days from a to b (b - a). Can be negative.
 export function daysBetween(a: string, b: string): number {

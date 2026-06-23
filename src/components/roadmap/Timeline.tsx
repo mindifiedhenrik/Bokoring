@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { ZOOM_LEVELS, addDays, dateToX, daysBetween, monthTicks, timelineWindow } from "../../lib/timeline";
 import { fmtDate } from "../../lib/format";
@@ -26,10 +26,11 @@ type Props = {
 const TODAY = new Date().toISOString().slice(0, 10);
 
 // Vertical geometry: the axis sits at LINE_Y; a card in row `lane` hangs
-// BASE_GAP + lane * ROW_H below it, connected by a line.
+// BASE_GAP + lane * ROW_H below it, connected by a line. ROW_H is larger than a
+// card so stacked rows never overlap.
 const LINE_Y = 100;
 const BASE_GAP = 14;
-const ROW_H = 52;
+const ROW_H = 80;
 const MAX_LANE = 8;
 
 type Drag = {
@@ -42,15 +43,33 @@ type Drag = {
   previewLane: number;
 };
 
+type Pending = { id: Id<"milestones">; date: string; lane: number };
+
 export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, onOpen, onSetPosition }: Props) {
   const pxPerDay = ZOOM_LEVELS[zoomIndex];
   const canvasRef = useRef<HTMLDivElement>(null);
   const movedRef = useRef(false);
   const [drag, setDrag] = useState<Drag | null>(null);
+  // Hold the just-dropped position until the server round-trips, so the card
+  // doesn't flash back to its old spot between drop and the query update.
+  const [pending, setPending] = useState<Pending | null>(null);
+
+  useEffect(() => {
+    if (!pending) return;
+    const m = milestones.find((x) => x._id === pending.id);
+    if (!m || (m.datum === pending.date && m.lane === pending.lane)) setPending(null);
+  }, [milestones, pending]);
 
   // Persistent row for a milestone, falling back to a staggered default for any
   // that have never been placed.
   const laneOf = (m: Milestone, i: number) => m.lane ?? i % 3;
+
+  // Effective (date, lane) to render: live drag preview > just-dropped pending > stored.
+  const effPos = (m: Milestone, i: number) => {
+    if (drag?.id === m._id) return { date: drag.previewDate, lane: drag.previewLane };
+    if (pending?.id === m._id) return { date: pending.date, lane: pending.lane };
+    return { date: m.datum, lane: laneOf(m, i) };
+  };
 
   const { startDate, endDate } = timelineWindow(milestones.map((m) => m.datum), TODAY);
   const width = Math.max(daysBetween(startDate, endDate) * pxPerDay, 600);
@@ -61,10 +80,7 @@ export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, o
   );
 
   // Grow the canvas so the deepest row (and its hover popover) is never clipped.
-  const deepestLane = milestones.reduce(
-    (mx, m, i) => Math.max(mx, drag && drag.id === m._id ? drag.previewLane : laneOf(m, i)),
-    0,
-  );
+  const deepestLane = milestones.reduce((mx, m, i) => Math.max(mx, effPos(m, i).lane), 0);
   const minHeight = LINE_Y + BASE_GAP + deepestLane * ROW_H + 64 + 180;
 
   function onPointerDown(e: React.PointerEvent, m: Milestone, lane: number) {
@@ -84,6 +100,7 @@ export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, o
   function onPointerUp() {
     if (!drag) return;
     if (drag.previewDate !== drag.date || drag.previewLane !== drag.lane) {
+      setPending({ id: drag.id, date: drag.previewDate, lane: drag.previewLane });
       onSetPosition(drag.id, drag.previewDate, drag.previewLane);
     }
     setDrag(null);
@@ -124,8 +141,7 @@ export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, o
 
         {milestones.map((m, i) => {
           const dragging = drag?.id === m._id;
-          const date = dragging ? drag!.previewDate : m.datum;
-          const lane = dragging ? drag!.previewLane : laneOf(m, i);
+          const { date, lane } = effPos(m, i);
           const x = dateToX(date, startDate, pxPerDay);
           const linked = linkedTasks(m);
           return (
