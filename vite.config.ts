@@ -10,5 +10,6 @@ export default defineConfig(({ command }) => ({
   test: {
     environment: "edge-runtime",
     server: { deps: { inline: ["convex-test"] } },
+    setupFiles: ["./convex/test.setup.ts"],
   },
 }));

@@ -1,6 +1,7 @@
 import { useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
+import OrgSwitcher from "./OrgSwitcher";
 
 type View = "kanban" | "contacts" | "tasks";
 
@@ -24,6 +25,7 @@ export default function Sidebar({ view, onNavigate, onOpenSettings }: {
         <span className="dot"></span>
         <span className="sub">CRM</span>
       </div>
+      <OrgSwitcher />
 
       <div
         className={"nav-item" + (view === "kanban" ? " active" : "")}

@@ -15,17 +15,38 @@ export const logEntry = v.object({
 
 export default defineSchema({
   ...authTables,
+  // Override the auth `users` table to add the active-org pointer. Keep the
+  // original auth fields + indexes (email, phone).
+  users: defineTable({
+    ...authTables.users.validator.fields,
+    activeOrgId: v.optional(v.id("organizations")),
+  })
+    .index("email", ["email"])
+    .index("phone", ["phone"]),
+  organizations: defineTable({
+    namn: v.string(),
+    joinCode: v.string(),
+  }).index("by_joinCode", ["joinCode"]),
+  memberships: defineTable({
+    userId: v.id("users"),
+    orgId: v.id("organizations"),
+  })
+    .index("by_user", ["userId"])
+    .index("by_org", ["orgId"])
+    .index("by_user_org", ["userId", "orgId"]),
+  // Reminder: ansvarig (user), datum (ISO date), kort text — alla valfria.
   contacts: defineTable({
+    orgId: v.id("organizations"),
     namn: v.string(),
     foretag: v.string(),
     epost: v.string(),
     telefon: v.string(),
-    // Optional single reminder: ansvarig (user), datum (ISO date), kort text.
     reminderAgareId: v.optional(v.id("users")),
     reminderDatum: v.optional(v.string()),
     reminderText: v.optional(v.string()),
-  }),
+  }).index("by_org", ["orgId"]),
   leads: defineTable({
+    orgId: v.id("organizations"),
     titel: v.string(),
     beskrivning: v.string(),
     contactId: v.optional(v.id("contacts")),
@@ -40,14 +61,17 @@ export default defineSchema({
     order: v.optional(v.number()),
   })
     .index("by_contact", ["contactId"])
-    .index("by_agare", ["agareId"]),
+    .index("by_agare", ["agareId"])
+    .index("by_org", ["orgId"]),
   projects: defineTable({
+    orgId: v.id("organizations"),
     namn: v.string(),
     beskrivning: v.string(),
     color: v.string(),
     order: v.optional(v.number()),
-  }),
+  }).index("by_org", ["orgId"]),
   tasks: defineTable({
+    orgId: v.id("organizations"),
     titel: v.string(),
     beskrivning: v.string(),
     projectId: v.id("projects"),
@@ -63,7 +87,8 @@ export default defineSchema({
   })
     .index("by_project", ["projectId"])
     .index("by_status", ["status"])
-    .index("by_agare", ["agareId"]),
+    .index("by_agare", ["agareId"])
+    .index("by_org", ["orgId"]),
   userProfiles: defineTable({
     userId: v.id("users"),
     displayName: v.string(),
@@ -71,10 +96,13 @@ export default defineSchema({
   // Short notes attached to a contact. Creation time + author come from
   // `_creationTime` and `authorId`.
   notes: defineTable({
+    orgId: v.id("organizations"),
     contactId: v.id("contacts"),
     text: v.string(),
     authorId: v.optional(v.id("users")),
-  }).index("by_contact", ["contactId"]),
+  })
+    .index("by_contact", ["contactId"])
+    .index("by_org", ["orgId"]),
   // Per-user read marker for a contact's notes (for the unread dot).
   contactReads: defineTable({
     userId: v.id("users"),
@@ -82,7 +110,8 @@ export default defineSchema({
     lastReadAt: v.number(),
   }).index("by_user_contact", ["userId", "contactId"]),
   settings: defineTable({
+    orgId: v.id("organizations"),
     archiveDays: v.number(),
     pileThreshold: v.number(),
-  }),
+  }).index("by_org", ["orgId"]),
 });

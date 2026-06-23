@@ -10,13 +10,16 @@ export const run = internalMutation({
     const existing = await ctx.db.query("leads").first();
     if (existing) return "already seeded";
 
+    // Seed runs on an empty deployment; create the org these rows belong to.
+    const orgId = await ctx.db.insert("organizations", { namn: "Boköring", joinCode: "BOKORING" });
+
     const c = [];
     for (const data of [
       { namn: "Anna Lindqvist", foretag: "Nordkvist Bygg AB", epost: "anna@nordkvist.se", telefon: "070-123 45 67" },
       { namn: "Johan Berg", foretag: "Bergström Logistik", epost: "johan.berg@blog.se", telefon: "073-987 65 43" },
       { namn: "Sofia Holm", foretag: "Holm Design Studio", epost: "sofia@holmstudio.se", telefon: "076-555 22 11" },
       { namn: "Erik Sandell", foretag: "TechVind AB", epost: "erik@techvind.se", telefon: "070-444 88 99" },
-    ]) c.push(await ctx.db.insert("contacts", data));
+    ]) c.push(await ctx.db.insert("contacts", { orgId, ...data }));
 
     const leadSeed = [
       { titel: "Webbplattform & integration", beskrivning: "Behöver ny kundportal med ERP-koppling. Budget bekräftad.", contactId: c[0], sannolikhet: 30, datum: tAgo(2).slice(0, 10), steg: "Lead" },
@@ -25,7 +28,7 @@ export const run = internalMutation({
       { titel: "Vindkraft – serviceavtal", beskrivning: "Femårigt serviceavtal för turbinpark. Offert skickad.", contactId: c[3], sannolikhet: 85, datum: tAgo(14).slice(0, 10), steg: "Offererat" },
     ];
     for (const l of leadSeed) {
-      await ctx.db.insert("leads", { ...l, log: [{ ts: new Date().toISOString(), from: null, to: l.steg }] });
+      await ctx.db.insert("leads", { orgId, ...l, log: [{ ts: new Date().toISOString(), from: null, to: l.steg }] });
     }
 
     const p = [];
@@ -33,7 +36,7 @@ export const run = internalMutation({
       { namn: "Kundportal 2.0", beskrivning: "Ny självbetjäningsportal med ERP-koppling." },
       { namn: "Rebranding", beskrivning: "Visuell identitet och ny webbplats." },
     ].entries()) {
-      p.push(await ctx.db.insert("projects", { ...data, color: PROJECT_COLORS[i % PROJECT_COLORS.length] }));
+      p.push(await ctx.db.insert("projects", { orgId, ...data, color: PROJECT_COLORS[i % PROJECT_COLORS.length] }));
     }
 
     const taskSeed = [
@@ -51,7 +54,7 @@ export const run = internalMutation({
     ];
     for (const { daysAgo, ...rest } of taskSeed) {
       await ctx.db.insert("tasks", {
-        ...rest, beskrivning: "", archived: false,
+        orgId, ...rest, beskrivning: "", archived: false,
         log: [{ ts: tAgo(daysAgo), from: null, to: rest.status }],
       });
     }

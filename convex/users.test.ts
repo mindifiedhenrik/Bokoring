@@ -2,52 +2,67 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
+import { setupOrg, modules } from "./test.helpers";
 
-const modules = import.meta.glob("./**/*.ts");
-
-test("users.list ger displayName från profil, annars e-post-prefix", async () => {
+test("users.list returns only members of the active org with displayName", async () => {
   const t = convexTest(schema, modules);
-  const { a } = await t.run(async (ctx) => {
-    const a = await ctx.db.insert("users", { email: "anna@firma.se" });
-    const b = await ctx.db.insert("users", { email: "bo@firma.se" });
-    await ctx.db.insert("userProfiles", { userId: a, displayName: "Anna A" });
-    return { a, b };
+  const { orgId, userId, as } = await setupOrg(t, { joinCode: "USRA1111", email: "anna@firma.se" });
+  const other = await t.run(async (ctx) => {
+    const b = await ctx.db.insert("users", { email: "bo@firma.se", activeOrgId: orgId });
+    await ctx.db.insert("memberships", { userId: b, orgId });
+    await ctx.db.insert("userProfiles", { userId: b, displayName: "Bo B" });
+    const otherOrg = await ctx.db.insert("organizations", { namn: "Other", joinCode: "ELSE1111" });
+    const c = await ctx.db.insert("users", { email: "carl@other.se", activeOrgId: otherOrg });
+    await ctx.db.insert("memberships", { userId: c, orgId: otherOrg });
+    return { b, c };
   });
-  const u = t.withIdentity({ subject: `${a}|s` });
-  const list = await u.query(api.users.list, {});
-  expect(list.find((x) => x.email === "anna@firma.se")!.displayName).toBe("Anna A");
-  expect(list.find((x) => x.email === "bo@firma.se")!.displayName).toBe("bo");
+  const list = await as.query(api.users.list, {});
+  const emails = list.map((u) => u.email).sort();
+  expect(emails).toEqual(["anna@firma.se", "bo@firma.se"]);
+  expect(list.find((u) => u.email === "bo@firma.se")!.displayName).toBe("Bo B");
+  expect(list.find((u) => u._id === userId)!.isSelf).toBe(true);
+  void other;
 });
 
-test("users.remove vägrar radera sig själv", async () => {
+test("users.viewer returns the email", async () => {
   const t = convexTest(schema, modules);
-  const me = await t.run(async (ctx) => ctx.db.insert("users", { email: "me@firma.se" }));
-  const u = t.withIdentity({ subject: `${me}|s` });
-  await expect(u.mutation(api.users.remove, { userId: me })).rejects.toThrow();
+  const { as } = await setupOrg(t, { joinCode: "USRV1111", email: "v@firma.se" });
+  expect(await as.query(api.users.viewer, {})).toMatchObject({ email: "v@firma.se" });
 });
 
-test("users.remove nollställer ansvarig på leads och tasks", async () => {
+test("removeMember detaches a member and nulls their ownership in the org", async () => {
   const t = convexTest(schema, modules);
-  const { me, victim, projectId } = await t.run(async (ctx) => {
-    const me = await ctx.db.insert("users", { email: "me@firma.se" });
-    const victim = await ctx.db.insert("users", { email: "v@firma.se" });
-    const projectId = await ctx.db.insert("projects", { namn: "P", beskrivning: "", color: "#000" });
-    return { me, victim, projectId };
+  const { orgId, as } = await setupOrg(t, { joinCode: "USRR1111", email: "me@firma.se" });
+  const victim = await t.run(async (ctx) => {
+    const v = await ctx.db.insert("users", { email: "v@firma.se", activeOrgId: orgId });
+    await ctx.db.insert("memberships", { userId: v, orgId });
+    return v;
   });
-  const u = t.withIdentity({ subject: `${me}|s` });
-  const leadId = await u.mutation(api.leads.create, {
+  const projectId = await as.mutation(api.projects.create, { namn: "P", beskrivning: "" });
+  const leadId = await as.mutation(api.leads.create, {
     titel: "L", beskrivning: "", sannolikhet: 10, agareId: victim, datum: "2026-06-17", steg: "Lead",
   });
-  const taskId = await u.mutation(api.tasks.create, {
+  const taskId = await as.mutation(api.tasks.create, {
     titel: "T", beskrivning: "", projectId, status: "Backlog", agareId: victim, prioritet: "Normal",
   });
 
-  await u.mutation(api.users.remove, { userId: victim });
+  await as.mutation(api.users.removeMember, { userId: victim });
 
-  const lead = (await u.query(api.leads.list, {})).find((l) => l._id === leadId)!;
-  const task = (await u.query(api.tasks.list, {})).find((x) => x._id === taskId)!;
+  const lead = (await as.query(api.leads.list, {})).find((l) => l._id === leadId)!;
+  const task = (await as.query(api.tasks.list, {})).find((x) => x._id === taskId)!;
   expect(lead.agareId).toBeUndefined();
   expect(task.agareId).toBeUndefined();
-  const remaining = await t.run(async (ctx) => ctx.db.get("users", victim));
-  expect(remaining).toBeNull();
+  const stillMember = await t.run((ctx) =>
+    ctx.db
+      .query("memberships")
+      .withIndex("by_user_org", (q) => q.eq("userId", victim).eq("orgId", orgId))
+      .first(),
+  );
+  expect(stillMember).toBeNull();
+});
+
+test("removeMember refuses removing yourself", async () => {
+  const t = convexTest(schema, modules);
+  const { userId, as } = await setupOrg(t, { joinCode: "USRS1111", email: "me@firma.se" });
+  await expect(as.mutation(api.users.removeMember, { userId })).rejects.toThrow();
 });

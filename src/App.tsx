@@ -5,6 +5,7 @@ import Sidebar from "./components/Sidebar";
 import ModalHost from "./components/ModalHost";
 import { ToastProvider } from "./context/ToastContext";
 import { ModalProvider, useModal } from "./context/ModalContext";
+import { OrgProvider } from "./context/OrgContext";
 import PipelineView from "./components/kanban/PipelineView";
 import ContactsView from "./components/contacts/ContactsView";
 import TasksView from "./components/tasks/TasksView";
@@ -35,7 +36,9 @@ export default function App() {
       <Authenticated>
         <ToastProvider>
           <ModalProvider>
-            <Workspace />
+            <OrgProvider>
+              <Workspace />
+            </OrgProvider>
           </ModalProvider>
         </ToastProvider>
       </Authenticated>

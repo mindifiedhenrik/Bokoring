@@ -600,3 +600,88 @@
   display: inline-block; width: 8px; height: 8px; border-radius: 50%;
   background: #2f6fed; margin-left: 7px; vertical-align: middle;
 }
+
+/* Organisation switcher in the (dark) sidebar — tucked under the brand. */
+.org-switcher,
+.org-name {
+  box-sizing: border-box;
+  width: 100%;
+  margin: -22px 0 24px;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+
+/* Single org: a quiet, non-interactive pill. */
+.org-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .09);
+  color: #efe7d8;
+}
+
+/* Multiple orgs: a custom dropdown (native <select> menus can't be styled). */
+.org-switcher { position: relative; }
+.org-switcher-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 11px 9px 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .05);
+  color: #efe7d8;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease;
+}
+.org-switcher-btn:hover { background: rgba(255, 255, 255, .09); border-color: rgba(255, 255, 255, .22); }
+.org-switcher-btn:focus-visible { outline: none; border-color: var(--accent); }
+.org-switcher-label { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.org-switcher-chevron { width: 15px; height: 15px; flex: none; color: #cdc3b2; transition: transform .18s ease; }
+.org-switcher-chevron.open { transform: rotate(180deg); }
+
+/* The popup list — styled to match the dark sidebar. */
+.org-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  padding: 5px;
+  border-radius: var(--radius-sm);
+  background: #2a241e;
+  border: 1px solid rgba(255, 255, 255, .14);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .45);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.org-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #cdc3b2;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease;
+}
+.org-menu-item:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.org-menu-item.active { color: #efe7d8; font-weight: 600; }
+.org-menu-check { width: 15px; height: 15px; flex: none; color: var(--accent); }

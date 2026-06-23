@@ -1,18 +1,23 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "./helpers";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireOrg } from "./helpers";
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Inte inloggad");
-    // CRM displays the full shared contact list. Each contact is augmented with
-    // the timestamp of its most recent note (for sorting) and whether the current
+    const { userId, orgId } = await requireOrg(ctx);
+    // CRM displays the org's contact list. Each contact is augmented with the
+    // timestamp of its most recent note (for sorting) and whether the current
     // user has an unread note (newer than their last read of that contact).
-    const contacts = await ctx.db.query("contacts").order("desc").collect();
-    const notes = await ctx.db.query("notes").collect();
+    const contacts = await ctx.db
+      .query("contacts")
+      .withIndex("by_org", (q) => q.eq("orgId", orgId))
+      .order("desc")
+      .collect();
+    const notes = await ctx.db
+      .query("notes")
+      .withIndex("by_org", (q) => q.eq("orgId", orgId))
+      .collect();
     const lastNoteAt = new Map<string, number>();
     for (const n of notes) {
       const cur = lastNoteAt.get(n.contactId) ?? 0;
@@ -44,15 +49,17 @@ const fields = {
 export const create = mutation({
   args: fields,
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-    return await ctx.db.insert("contacts", args);
+    const { orgId } = await requireOrg(ctx);
+    return await ctx.db.insert("contacts", { ...args, orgId });
   },
 });
 
 export const update = mutation({
   args: { id: v.id("contacts"), ...fields },
   handler: async (ctx, { id, ...patch }) => {
-    await requireAuth(ctx);
+    const { orgId } = await requireOrg(ctx);
+    const prev = await ctx.db.get("contacts", id);
+    if (!prev || prev.orgId !== orgId) throw new Error("Kontakt saknas");
     await ctx.db.patch("contacts", id, patch);
   },
 });
@@ -60,8 +67,9 @@ export const update = mutation({
 export const markRead = mutation({
   args: { id: v.id("contacts") },
   handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Inte inloggad");
+    const { userId, orgId } = await requireOrg(ctx);
+    const contact = await ctx.db.get("contacts", id);
+    if (!contact || contact.orgId !== orgId) throw new Error("Kontakt saknas");
     const existing = await ctx.db
       .query("contactReads")
       .withIndex("by_user_contact", (q) => q.eq("userId", userId).eq("contactId", id))
@@ -80,7 +88,9 @@ export const setReminder = mutation({
     text: v.string(),
   },
   handler: async (ctx, { id, agareId, datum, text }) => {
-    await requireAuth(ctx);
+    const { orgId } = await requireOrg(ctx);
+    const prev = await ctx.db.get("contacts", id);
+    if (!prev || prev.orgId !== orgId) throw new Error("Kontakt saknas");
     await ctx.db.patch("contacts", id, {
       reminderAgareId: agareId,
       reminderDatum: datum,
@@ -92,7 +102,9 @@ export const setReminder = mutation({
 export const clearReminder = mutation({
   args: { id: v.id("contacts") },
   handler: async (ctx, { id }) => {
-    await requireAuth(ctx);
+    const { orgId } = await requireOrg(ctx);
+    const prev = await ctx.db.get("contacts", id);
+    if (!prev || prev.orgId !== orgId) throw new Error("Kontakt saknas");
     await ctx.db.patch("contacts", id, {
       reminderAgareId: undefined,
       reminderDatum: undefined,
@@ -104,7 +116,9 @@ export const clearReminder = mutation({
 export const remove = mutation({
   args: { id: v.id("contacts") },
   handler: async (ctx, { id }) => {
-    await requireAuth(ctx);
+    const { orgId } = await requireOrg(ctx);
+    const prev = await ctx.db.get("contacts", id);
+    if (!prev || prev.orgId !== orgId) return;
     const linked = await ctx.db
       .query("leads")
       .withIndex("by_contact", (q) => q.eq("contactId", id))

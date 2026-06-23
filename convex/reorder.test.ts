@@ -2,12 +2,11 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
-
-const modules = import.meta.glob("./**/*.ts");
+import { setupOrg, modules } from "./test.helpers";
 
 test("tasks.reorder changes list order", async () => {
   const t = convexTest(schema, modules);
-  const u = t.withIdentity({ name: "Test" });
+  const { as: u } = await setupOrg(t, { joinCode: "RDR11111" });
   const projectId = await u.mutation(api.projects.create, { namn: "P", beskrivning: "" });
   const a = await u.mutation(api.tasks.create, { titel: "A", beskrivning: "", projectId, status: "Backlog", prioritet: "Normal" });
   const b = await u.mutation(api.tasks.create, { titel: "B", beskrivning: "", projectId, status: "Backlog", prioritet: "Normal" });
@@ -23,7 +22,7 @@ test("tasks.reorder changes list order", async () => {
 
 test("projects.reorder changes list order", async () => {
   const t = convexTest(schema, modules);
-  const u = t.withIdentity({ name: "Test" });
+  const { as: u } = await setupOrg(t, { joinCode: "RDR22222" });
   const a = await u.mutation(api.projects.create, { namn: "A", beskrivning: "" });
   const b = await u.mutation(api.projects.create, { namn: "B", beskrivning: "" });
   let list = await u.query(api.projects.list, {});

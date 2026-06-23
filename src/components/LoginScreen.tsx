@@ -22,7 +22,7 @@ export default function LoginScreen() {
       setError(
         flow === "signIn"
           ? "Fel e-post eller lösenord."
-          : "Kunde inte registrera. Kontrollera registreringskoden och att lösenordet är minst 8 tecken."
+          : "Kunde inte registrera. Kontrollera organisationskoden och att lösenordet är minst 8 tecken."
       );
       setBusy(false);
     }
@@ -48,8 +48,8 @@ export default function LoginScreen() {
           </div>
           {flow === "signUp" && (
             <div className="field">
-              <label>Registreringskod</label>
-              <input type="text" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="Kod från din administratör" />
+              <label>Organisationskod</label>
+              <input type="text" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="Kod från din organisation" />
             </div>
           )}
           <button className="btn btn-primary" type="submit" disabled={busy}>
