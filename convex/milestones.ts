@@ -56,3 +56,36 @@ export const setDate = mutation({
     await ctx.db.patch("milestones", id, { datum, log });
   },
 });
+
+export const remove = mutation({
+  args: { id: v.id("milestones") },
+  handler: async (ctx, { id }) => {
+    const { orgId } = await requireOrg(ctx);
+    const prev = await ctx.db.get("milestones", id);
+    if (!prev || prev.orgId !== orgId) return;
+    await ctx.db.delete("milestones", id);
+  },
+});
+
+export const linkTask = mutation({
+  args: { id: v.id("milestones"), taskId: v.id("tasks") },
+  handler: async (ctx, { id, taskId }) => {
+    const { orgId } = await requireOrg(ctx);
+    const prev = await ctx.db.get("milestones", id);
+    if (!prev || prev.orgId !== orgId) return;
+    const task = await ctx.db.get("tasks", taskId);
+    if (!task || task.orgId !== orgId) return;
+    if (prev.taskIds.includes(taskId)) return;
+    await ctx.db.patch("milestones", id, { taskIds: [...prev.taskIds, taskId] });
+  },
+});
+
+export const unlinkTask = mutation({
+  args: { id: v.id("milestones"), taskId: v.id("tasks") },
+  handler: async (ctx, { id, taskId }) => {
+    const { orgId } = await requireOrg(ctx);
+    const prev = await ctx.db.get("milestones", id);
+    if (!prev || prev.orgId !== orgId) return;
+    await ctx.db.patch("milestones", id, { taskIds: prev.taskIds.filter((t) => t !== taskId) });
+  },
+});

@@ -52,3 +52,28 @@ test("milestones.update changes fields and logs date changes", async () => {
   expect(m.color).toBe("#4f7a52");
   expect(m.log.at(-1)).toMatchObject({ from: "2026-03-01", to: "2026-05-01" });
 });
+
+test("milestones.linkTask and unlinkTask manage the task list", async () => {
+  const t = convexTest(schema, modules);
+  const { as: u } = await setupOrg(t);
+  const projectId = await u.mutation(api.projects.create, { namn: "P", beskrivning: "" });
+  const taskId = await u.mutation(api.tasks.create, { titel: "T", beskrivning: "", projectId, status: "Backlog", prioritet: "Normal" });
+  const id = await u.mutation(api.milestones.create, { titel: "M", beskrivning: "", datum: "2026-03-01", color: "#c45b32" });
+  await u.mutation(api.milestones.linkTask, { id, taskId });
+  let m = (await u.query(api.milestones.list, {})).find((x) => x._id === id)!;
+  expect(m.taskIds).toEqual([taskId]);
+  await u.mutation(api.milestones.linkTask, { id, taskId }); // duplicate is a no-op
+  m = (await u.query(api.milestones.list, {})).find((x) => x._id === id)!;
+  expect(m.taskIds).toEqual([taskId]);
+  await u.mutation(api.milestones.unlinkTask, { id, taskId });
+  m = (await u.query(api.milestones.list, {})).find((x) => x._id === id)!;
+  expect(m.taskIds).toEqual([]);
+});
+
+test("milestones.remove deletes the milestone", async () => {
+  const t = convexTest(schema, modules);
+  const { as: u } = await setupOrg(t);
+  const id = await u.mutation(api.milestones.create, { titel: "M", beskrivning: "", datum: "2026-03-01", color: "#c45b32" });
+  await u.mutation(api.milestones.remove, { id });
+  expect(await u.query(api.milestones.list, {})).toHaveLength(0);
+});
