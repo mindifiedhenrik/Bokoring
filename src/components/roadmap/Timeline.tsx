@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { ZOOM_LEVELS, addDays, dateToX, daysBetween, monthTicks, timelineWindow, xToDate } from "../../lib/timeline";
 import { fmtDate } from "../../lib/format";
@@ -49,6 +49,8 @@ type Pending = { id: Id<"milestones">; date: string; lane: number };
 export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, onOpen, onSetPosition, onCreateAt }: Props) {
   const pxPerDay = ZOOM_LEVELS[zoomIndex];
   const canvasRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const prevPxRef = useRef(pxPerDay);
   const movedRef = useRef(false);
   const [drag, setDrag] = useState<Drag | null>(null);
   // Hold the just-dropped position until the server round-trips, so the card
@@ -74,6 +76,16 @@ export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, o
 
   const { startDate, endDate } = timelineWindow(milestones.map((m) => m.datum), TODAY);
   const width = Math.max(daysBetween(startDate, endDate) * pxPerDay, 600);
+
+  // Keep the date under the viewport centre fixed when the zoom level changes,
+  // so zooming feels anchored rather than jumping from the left edge.
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el || prevPxRef.current === pxPerDay) return;
+    const centerDate = xToDate(el.scrollLeft + el.clientWidth / 2, startDate, prevPxRef.current);
+    el.scrollLeft = dateToX(centerDate, startDate, pxPerDay) - el.clientWidth / 2;
+    prevPxRef.current = pxPerDay;
+  }, [pxPerDay, startDate]);
 
   // Zoomed far out: keep only quarter-start labels so they don't crowd.
   const ticks = monthTicks(startDate, endDate).filter(
@@ -132,7 +144,7 @@ export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, o
   const todayX = dateToX(TODAY, startDate, pxPerDay);
 
   return (
-    <div className="tl-scroll" onWheel={onWheel}>
+    <div ref={scrollRef} className="tl-scroll" onWheel={onWheel}>
       <div ref={canvasRef} className="tl-canvas" style={{ width, minHeight }}
         onClick={onCanvasClick}
         onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>
