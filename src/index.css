@@ -714,17 +714,16 @@
   }
 
   /* Each milestone hangs from the timeline: dot on the line, a connector line
-     down to the card. Lanes stagger the card depth so neighbours don't overlap. */
+     down to the card. The connector height (the row) is set inline per milestone
+     from its persistent lane so users can drag cards between rows. */
   .tl-ms { position: absolute; top: 100px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
   .tl-ms .tl-dot {
     width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--card);
     box-shadow: var(--shadow-sm); margin-top: -6px;
   }
   .tl-connector { width: 2px; background: var(--line); flex: none; }
-  .tl-ms.lane-0 .tl-connector { height: 14px; }
-  .tl-ms.lane-1 .tl-connector { height: 64px; }
-  .tl-ms.lane-2 .tl-connector { height: 114px; }
   .tl-ms.dragging { z-index: 5; }
+  .tl-ms.dragging .tl-connector { background: var(--accent); }
   .tl-ms:hover { z-index: 20; }
 
   .tl-card {

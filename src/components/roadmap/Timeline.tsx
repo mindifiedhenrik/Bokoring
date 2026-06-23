@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { ZOOM_LEVELS, addDays, dateToX, daysBetween, monthTicks } from "../../lib/timeline";
+import { ZOOM_LEVELS, addDays, dateToX, daysBetween, monthTicks, timelineWindow } from "../../lib/timeline";
 import { fmtDate } from "../../lib/format";
 
 type Milestone = {
@@ -9,6 +9,7 @@ type Milestone = {
   datum: string;
   color: string;
   taskIds: Id<"tasks">[];
+  lane?: number;
 };
 
 type LinkedTask = { id: string; titel: string; color: string };
@@ -19,25 +20,39 @@ type Props = {
   zoomIndex: number;
   onZoom: (delta: number) => void;
   onOpen: (id: Id<"milestones">) => void;
-  onSetDate: (id: Id<"milestones">, datum: string) => void;
+  onSetPosition: (id: Id<"milestones">, datum: string, lane: number) => void;
 };
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
-type Drag = { id: Id<"milestones">; startX: number; date: string; preview: string };
+// Vertical geometry: the axis sits at LINE_Y; a card in row `lane` hangs
+// BASE_GAP + lane * ROW_H below it, connected by a line.
+const LINE_Y = 100;
+const BASE_GAP = 14;
+const ROW_H = 52;
+const MAX_LANE = 8;
 
-export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, onOpen, onSetDate }: Props) {
+type Drag = {
+  id: Id<"milestones">;
+  startX: number;
+  startY: number;
+  date: string;
+  lane: number;
+  previewDate: string;
+  previewLane: number;
+};
+
+export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, onOpen, onSetPosition }: Props) {
   const pxPerDay = ZOOM_LEVELS[zoomIndex];
   const canvasRef = useRef<HTMLDivElement>(null);
   const movedRef = useRef(false);
   const [drag, setDrag] = useState<Drag | null>(null);
 
-  // Time window: pad around the earliest/latest milestone and today.
-  const dates = [TODAY, ...milestones.map((m) => m.datum)];
-  const min = dates.reduce((a, b) => (a < b ? a : b));
-  const max = dates.reduce((a, b) => (a > b ? a : b));
-  const startDate = addDays(min, -30);
-  const endDate = addDays(max, 60);
+  // Persistent row for a milestone, falling back to a staggered default for any
+  // that have never been placed.
+  const laneOf = (m: Milestone, i: number) => m.lane ?? i % 3;
+
+  const { startDate, endDate } = timelineWindow(milestones.map((m) => m.datum), TODAY);
   const width = Math.max(daysBetween(startDate, endDate) * pxPerDay, 600);
 
   // Zoomed far out: keep only quarter-start labels so they don't crowd.
@@ -45,20 +60,32 @@ export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, o
     (t) => pxPerDay >= 4 || new Date(t).getUTCMonth() % 3 === 0,
   );
 
-  function onPointerDown(e: React.PointerEvent, m: Milestone) {
+  // Grow the canvas so the deepest row (and its hover popover) is never clipped.
+  const deepestLane = milestones.reduce(
+    (mx, m, i) => Math.max(mx, drag && drag.id === m._id ? drag.previewLane : laneOf(m, i)),
+    0,
+  );
+  const minHeight = LINE_Y + BASE_GAP + deepestLane * ROW_H + 64 + 180;
+
+  function onPointerDown(e: React.PointerEvent, m: Milestone, lane: number) {
     canvasRef.current?.setPointerCapture(e.pointerId);
     movedRef.current = false;
-    setDrag({ id: m._id, startX: e.clientX, date: m.datum, preview: m.datum });
+    setDrag({ id: m._id, startX: e.clientX, startY: e.clientY, date: m.datum, lane, previewDate: m.datum, previewLane: lane });
   }
   function onPointerMove(e: React.PointerEvent) {
     if (!drag) return;
     const deltaDays = Math.round((e.clientX - drag.startX) / pxPerDay);
-    if (deltaDays !== 0) movedRef.current = true;
-    setDrag((d) => (d ? { ...d, preview: addDays(d.date, deltaDays) } : d));
+    const deltaLanes = Math.round((e.clientY - drag.startY) / ROW_H);
+    const previewDate = addDays(drag.date, deltaDays);
+    const previewLane = Math.max(0, Math.min(MAX_LANE, drag.lane + deltaLanes));
+    if (deltaDays !== 0 || deltaLanes !== 0) movedRef.current = true;
+    setDrag({ ...drag, previewDate, previewLane });
   }
   function onPointerUp() {
     if (!drag) return;
-    if (drag.preview !== drag.date) onSetDate(drag.id, drag.preview);
+    if (drag.previewDate !== drag.date || drag.previewLane !== drag.lane) {
+      onSetPosition(drag.id, drag.previewDate, drag.previewLane);
+    }
     setDrag(null);
   }
   function onPointerCancel() {
@@ -78,7 +105,8 @@ export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, o
 
   return (
     <div className="tl-scroll" onWheel={onWheel}>
-      <div ref={canvasRef} className="tl-canvas" style={{ width }} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>
+      <div ref={canvasRef} className="tl-canvas" style={{ width, minHeight }}
+        onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>
         <div className="tl-axis">
           {ticks.map((t) => (
             <div key={t} className="tl-tick" style={{ left: dateToX(t, startDate, pxPerDay) }}>
@@ -95,16 +123,17 @@ export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, o
         </div>
 
         {milestones.map((m, i) => {
-          const date = drag && drag.id === m._id ? drag.preview : m.datum;
+          const dragging = drag?.id === m._id;
+          const date = dragging ? drag!.previewDate : m.datum;
+          const lane = dragging ? drag!.previewLane : laneOf(m, i);
           const x = dateToX(date, startDate, pxPerDay);
-          const lane = i % 3;
           const linked = linkedTasks(m);
           return (
-            <div key={m._id} className={"tl-ms lane-" + lane + (drag?.id === m._id ? " dragging" : "")} style={{ left: x }}>
+            <div key={m._id} className={"tl-ms" + (dragging ? " dragging" : "")} style={{ left: x }}>
               <span className="tl-dot" style={{ background: m.color }} />
-              <span className="tl-connector" />
+              <span className="tl-connector" style={{ height: BASE_GAP + lane * ROW_H }} />
               <div className="tl-card" style={{ borderLeftColor: m.color }}
-                onPointerDown={(e) => onPointerDown(e, m)} onClick={() => onCardClick(m._id)}>
+                onPointerDown={(e) => onPointerDown(e, m, lane)} onClick={() => onCardClick(m._id)}>
                 <div className="tl-card-titel">{m.titel}</div>
                 <div className="tl-card-meta">
                   <span>{fmtDate(date)}</span>

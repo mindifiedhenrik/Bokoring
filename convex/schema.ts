@@ -96,6 +96,9 @@ export default defineSchema({
     datum: v.string(),
     color: v.string(),
     taskIds: v.array(v.id("tasks")),
+    // Persistent vertical row on the timeline (0 = nearest the axis). Optional so
+    // pre-existing documents validate; the UI falls back to a staggered default.
+    lane: v.optional(v.number()),
     log: v.array(logEntry),
     order: v.optional(v.number()),
   }).index("by_org", ["orgId"]),

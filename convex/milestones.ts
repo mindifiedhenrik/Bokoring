@@ -46,14 +46,31 @@ export const update = mutation({
   },
 });
 
-export const setDate = mutation({
-  args: { id: v.id("milestones"), datum: v.string() },
-  handler: async (ctx, { id, datum }) => {
+export const setPosition = mutation({
+  args: { id: v.id("milestones"), datum: v.string(), lane: v.number() },
+  handler: async (ctx, { id, datum, lane }) => {
     const { orgId } = await requireOrg(ctx);
     const prev = await ctx.db.get("milestones", id);
-    if (!prev || prev.orgId !== orgId || prev.datum === datum) return;
-    const log = [...prev.log, { ts: new Date().toISOString(), from: prev.datum, to: datum }];
-    await ctx.db.patch("milestones", id, { datum, log });
+    if (!prev || prev.orgId !== orgId) return;
+    if (prev.datum === datum && prev.lane === lane) return;
+    // Only the date change is worth an audit-log entry; the lane is pure layout.
+    const log = prev.datum !== datum
+      ? [...prev.log, { ts: new Date().toISOString(), from: prev.datum, to: datum }]
+      : prev.log;
+    await ctx.db.patch("milestones", id, { datum, lane, log });
+  },
+});
+
+export const setLanes = mutation({
+  args: { items: v.array(v.object({ id: v.id("milestones"), lane: v.number() })) },
+  handler: async (ctx, { items }) => {
+    const { orgId } = await requireOrg(ctx);
+    for (const { id, lane } of items) {
+      const prev = await ctx.db.get("milestones", id);
+      if (!prev || prev.orgId !== orgId) continue;
+      if (prev.lane === lane) continue;
+      await ctx.db.patch("milestones", id, { lane });
+    }
   },
 });
 
