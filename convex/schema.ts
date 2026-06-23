@@ -36,7 +36,7 @@ export default defineSchema({
     .index("by_user_org", ["userId", "orgId"]),
   // Reminder: ansvarig (user), datum (ISO date), kort text — alla valfria.
   contacts: defineTable({
-    orgId: v.optional(v.id("organizations")),
+    orgId: v.id("organizations"),
     namn: v.string(),
     foretag: v.string(),
     epost: v.string(),
@@ -46,7 +46,7 @@ export default defineSchema({
     reminderText: v.optional(v.string()),
   }).index("by_org", ["orgId"]),
   leads: defineTable({
-    orgId: v.optional(v.id("organizations")),
+    orgId: v.id("organizations"),
     titel: v.string(),
     beskrivning: v.string(),
     contactId: v.optional(v.id("contacts")),
@@ -64,14 +64,14 @@ export default defineSchema({
     .index("by_agare", ["agareId"])
     .index("by_org", ["orgId"]),
   projects: defineTable({
-    orgId: v.optional(v.id("organizations")),
+    orgId: v.id("organizations"),
     namn: v.string(),
     beskrivning: v.string(),
     color: v.string(),
     order: v.optional(v.number()),
   }).index("by_org", ["orgId"]),
   tasks: defineTable({
-    orgId: v.optional(v.id("organizations")),
+    orgId: v.id("organizations"),
     titel: v.string(),
     beskrivning: v.string(),
     projectId: v.id("projects"),
@@ -96,7 +96,7 @@ export default defineSchema({
   // Short notes attached to a contact. Creation time + author come from
   // `_creationTime` and `authorId`.
   notes: defineTable({
-    orgId: v.optional(v.id("organizations")),
+    orgId: v.id("organizations"),
     contactId: v.id("contacts"),
     text: v.string(),
     authorId: v.optional(v.id("users")),
@@ -110,7 +110,7 @@ export default defineSchema({
     lastReadAt: v.number(),
   }).index("by_user_contact", ["userId", "contactId"]),
   settings: defineTable({
-    orgId: v.optional(v.id("organizations")),
+    orgId: v.id("organizations"),
     archiveDays: v.number(),
     pileThreshold: v.number(),
   }).index("by_org", ["orgId"]),
