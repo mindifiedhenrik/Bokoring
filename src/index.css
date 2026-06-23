@@ -685,3 +685,67 @@
 .org-menu-item:hover { background: rgba(255, 255, 255, .08); color: #fff; }
 .org-menu-item.active { color: #efe7d8; font-weight: 600; }
 .org-menu-check { width: 15px; height: 15px; flex: none; color: var(--accent); }
+
+  /* ---- Roadmap / timeline ---- */
+  .tl-zoom { display: flex; gap: 6px; margin-right: 10px; }
+  .tl-zoom .btn { padding: 8px 14px; font-size: 16px; line-height: 1; font-weight: 700; }
+  .tl-empty {
+    margin: 40px auto; padding: 40px; max-width: 460px; text-align: center;
+    color: var(--ink-soft); border: 1.5px dashed var(--line);
+    border-radius: var(--radius); background: var(--card);
+  }
+
+  .tl-scroll { overflow-x: auto; overflow-y: hidden; padding: 0 0 24px; }
+  .tl-canvas { position: relative; min-height: 360px; padding-top: 56px; }
+
+  .tl-axis { position: absolute; top: 0; left: 0; right: 0; height: 40px; }
+  .tl-tick { position: absolute; top: 0; height: 100%; border-left: 1px solid var(--line); }
+  .tl-tick-label {
+    position: absolute; top: 8px; left: 6px; font-size: 11px; font-weight: 600;
+    letter-spacing: .4px; text-transform: uppercase; color: var(--ink-faint); white-space: nowrap;
+  }
+
+  .tl-line { position: absolute; left: 0; right: 0; top: 100px; height: 2px; background: var(--line); }
+
+  .tl-today { position: absolute; top: 40px; bottom: 0; border-left: 2px dashed var(--accent); }
+  .tl-today-label {
+    position: absolute; top: 2px; left: 4px; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .5px; color: var(--accent-deep);
+  }
+
+  .tl-ms { position: absolute; top: 100px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+  .tl-ms.lane-1 { top: 150px; }
+  .tl-ms.lane-2 { top: 200px; }
+  .tl-ms .tl-dot {
+    width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--card);
+    box-shadow: var(--shadow-sm); margin-top: -6px;
+  }
+  .tl-ms.dragging { z-index: 5; }
+
+  .tl-card {
+    margin-top: 8px; width: 150px; background: var(--card); border: 1px solid var(--line);
+    border-left: 3px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px;
+    box-shadow: var(--shadow-sm); cursor: grab; user-select: none; transition: box-shadow .15s, transform .15s;
+  }
+  .tl-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .tl-ms.dragging .tl-card { cursor: grabbing; box-shadow: var(--shadow-md); }
+  .tl-card-titel {
+    font-weight: 600; font-size: 13.5px; color: var(--ink); margin-bottom: 6px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .tl-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--ink-faint); }
+  .tl-card-count { background: var(--accent-soft); color: var(--accent-deep); font-weight: 700; padding: 1px 7px; border-radius: 999px; }
+
+  /* Milestone detail: color swatches + linked tasks */
+  .tl-swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--card); box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+  .tl-swatch.active { box-shadow: 0 0 0 2px var(--accent); }
+  .ms-tasks { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .ms-tasks > .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--ink-faint); margin-bottom: 10px; }
+  .ms-task-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .ms-task-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .ms-task-titel { flex: 1; text-align: left; background: none; border: none; cursor: pointer; font: inherit; font-size: 13.5px; color: var(--ink); padding: 0; }
+  .ms-task-titel:hover { color: var(--accent-deep); text-decoration: underline; }
+  .ms-task-proj { font-size: 12px; color: var(--ink-faint); }
+  .ms-task-x { background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; color: var(--ink-faint); padding: 0 4px; }
+  .ms-task-x:hover { color: var(--accent); }
+  .ms-task-add { margin-top: 12px; width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); color: var(--ink); font: inherit; cursor: pointer; }
