@@ -1,17 +1,17 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "./helpers";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireOrg } from "./helpers";
 
 export const listByContact = query({
   args: { contactId: v.id("contacts") },
   handler: async (ctx, { contactId }) => {
-    await requireAuth(ctx);
+    const { orgId } = await requireOrg(ctx);
+    const contact = await ctx.db.get("contacts", contactId);
+    if (!contact || contact.orgId !== orgId) throw new Error("Kontakt saknas");
     const rows = await ctx.db
       .query("notes")
       .withIndex("by_contact", (q) => q.eq("contactId", contactId))
       .collect();
-    // Newest first.
     return rows.sort((a, b) => b._creationTime - a._creationTime);
   },
 });
@@ -19,18 +19,21 @@ export const listByContact = query({
 export const add = mutation({
   args: { contactId: v.id("contacts"), text: v.string() },
   handler: async (ctx, { contactId, text }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Inte inloggad");
+    const { userId, orgId } = await requireOrg(ctx);
+    const contact = await ctx.db.get("contacts", contactId);
+    if (!contact || contact.orgId !== orgId) throw new Error("Kontakt saknas");
     const trimmed = text.trim();
     if (!trimmed) return;
-    await ctx.db.insert("notes", { contactId, text: trimmed, authorId: userId });
+    await ctx.db.insert("notes", { contactId, text: trimmed, authorId: userId, orgId });
   },
 });
 
 export const remove = mutation({
   args: { id: v.id("notes") },
   handler: async (ctx, { id }) => {
-    await requireAuth(ctx);
+    const { orgId } = await requireOrg(ctx);
+    const prev = await ctx.db.get("notes", id);
+    if (!prev || prev.orgId !== orgId) return;
     await ctx.db.delete("notes", id);
   },
 });
