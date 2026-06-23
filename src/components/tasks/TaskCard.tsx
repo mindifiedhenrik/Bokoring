@@ -1,20 +1,21 @@
 import type React from "react";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { PRIORITY_CLASS } from "../../lib/constants";
-import { daysSinceMove } from "../../lib/format";
+import { daysSinceMove, fmtDate, dateProximityColor } from "../../lib/format";
 
 interface TaskCardProps {
   task: Doc<"tasks">;
   projectColor: string;
   archiveDays: number;
   ownerName: string | null;
+  milestoneDate?: string;
   onClick: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
   onDragOver?: (e: React.DragEvent) => void;
 }
 
-export default function TaskCard({ task, projectColor, archiveDays, ownerName, onClick, onDragStart, onDragEnd, onDragOver }: TaskCardProps) {
+export default function TaskCard({ task, projectColor, archiveDays, ownerName, milestoneDate, onClick, onDragStart, onDragEnd, onDragOver }: TaskCardProps) {
   const cls = PRIORITY_CLASS[task.prioritet] ?? "normal";
   const days = daysSinceMove(task);
   // Highlight when a Done card is one day away from being archived.
@@ -40,6 +41,15 @@ export default function TaskCard({ task, projectColor, archiveDays, ownerName, o
       <div className="tm">
         <span className={"prio " + cls}>{task.prioritet || "Normal"}</span>
         {ownerName ? <span className="task-owner">{ownerName}</span> : null}
+        {milestoneDate ? (
+          <span className={"task-flag " + dateProximityColor(milestoneDate)} title={"Milstolpe: " + fmtDate(milestoneDate)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+              <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+            {fmtDate(milestoneDate)}
+          </span>
+        ) : null}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import OrgSwitcher from "./OrgSwitcher";
 
-type View = "kanban" | "contacts" | "tasks";
+type View = "kanban" | "contacts" | "tasks" | "roadmap";
 
 export default function Sidebar({ view, onNavigate, onOpenSettings }: {
   view: View;
@@ -13,6 +13,7 @@ export default function Sidebar({ view, onNavigate, onOpenSettings }: {
   const leads = useQuery(api.leads.list) ?? [];
   const contacts = useQuery(api.contacts.list) ?? [];
   const tasks = useQuery(api.tasks.list) ?? [];
+  const milestones = useQuery(api.milestones.list) ?? [];
   const viewer = useQuery(api.users.viewer);
   const { signOut } = useAuthActions();
 
@@ -63,6 +64,20 @@ export default function Sidebar({ view, onNavigate, onOpenSettings }: {
         </svg>
         <span>Uppgifter</span>
         <span className="count">{activeTasks}</span>
+      </div>
+
+      <div
+        className={"nav-item" + (view === "roadmap" ? " active" : "")}
+        onClick={() => onNavigate("roadmap")}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <circle cx="8" cy="12" r="2" />
+          <circle cx="16" cy="12" r="2" />
+          <line x1="12" y1="3" x2="12" y2="6" />
+        </svg>
+        <span>Roadmap</span>
+        <span className="count">{milestones.length}</span>
       </div>
 
       <button className="settings-btn" onClick={onOpenSettings}>

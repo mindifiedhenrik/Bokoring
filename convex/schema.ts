@@ -89,6 +89,19 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_agare", ["agareId"])
     .index("by_org", ["orgId"]),
+  milestones: defineTable({
+    orgId: v.id("organizations"),
+    titel: v.string(),
+    beskrivning: v.string(),
+    datum: v.string(),
+    color: v.string(),
+    taskIds: v.array(v.id("tasks")),
+    // Persistent vertical row on the timeline (0 = nearest the axis). Optional so
+    // pre-existing documents validate; the UI falls back to a staggered default.
+    lane: v.optional(v.number()),
+    log: v.array(logEntry),
+    order: v.optional(v.number()),
+  }).index("by_org", ["orgId"]),
   userProfiles: defineTable({
     userId: v.id("users"),
     displayName: v.string(),

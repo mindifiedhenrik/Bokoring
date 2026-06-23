@@ -9,8 +9,9 @@ import { OrgProvider } from "./context/OrgContext";
 import PipelineView from "./components/kanban/PipelineView";
 import ContactsView from "./components/contacts/ContactsView";
 import TasksView from "./components/tasks/TasksView";
+import RoadmapView from "./components/roadmap/RoadmapView";
 
-type View = "kanban" | "contacts" | "tasks";
+type View = "kanban" | "contacts" | "tasks" | "roadmap";
 
 function Workspace() {
   const [view, setView] = useState<View>("kanban");
@@ -22,6 +23,7 @@ function Workspace() {
         {view === "kanban" && <PipelineView />}
         {view === "contacts" && <ContactsView />}
         {view === "tasks" && <TasksView />}
+        {view === "roadmap" && <RoadmapView />}
       </main>
       <ModalHost />
     </div>

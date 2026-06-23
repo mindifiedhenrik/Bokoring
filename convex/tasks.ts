@@ -89,6 +89,16 @@ export const remove = mutation({
     const { orgId } = await requireOrg(ctx);
     const prev = await ctx.db.get("tasks", id);
     if (!prev || prev.orgId !== orgId) return;
+    // Scrub the deleted task from any milestone that links it (keep taskIds clean).
+    const milestones = await ctx.db
+      .query("milestones")
+      .withIndex("by_org", (q) => q.eq("orgId", orgId))
+      .collect();
+    for (const m of milestones) {
+      if (m.taskIds.includes(id)) {
+        await ctx.db.patch("milestones", m._id, { taskIds: m.taskIds.filter((t) => t !== id) });
+      }
+    }
     await ctx.db.delete("tasks", id);
   },
 });

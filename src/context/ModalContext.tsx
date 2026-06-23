@@ -8,6 +8,7 @@ type ModalState =
   | { kind: "cardDetail"; type: "task"; id: Id<"tasks"> }
   | { kind: "contactDetail"; id: Id<"contacts">; returnLeadId?: Id<"leads"> }
   | { kind: "projectForm"; id?: Id<"projects"> }
+  | { kind: "milestoneDetail"; id: Id<"milestones"> }
   | { kind: "settings" }
   | null;
 
@@ -17,6 +18,7 @@ type Api = {
   openTaskDetail: (id: Id<"tasks">) => void;
   openContactDetail: (id: Id<"contacts">, returnLeadId?: Id<"leads">) => void;
   openProjectForm: (id?: Id<"projects">) => void;
+  openMilestoneDetail: (id: Id<"milestones">) => void;
   openSettings: () => void;
   close: () => void;
 };
@@ -32,6 +34,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
     openTaskDetail: (id) => setState({ kind: "cardDetail", type: "task", id }),
     openContactDetail: (id, returnLeadId) => setState({ kind: "contactDetail", id, returnLeadId }),
     openProjectForm: (id) => setState({ kind: "projectForm", id }),
+    openMilestoneDetail: (id) => setState({ kind: "milestoneDetail", id }),
     openSettings: () => setState({ kind: "settings" }),
     close: () => setState(null),
   };
