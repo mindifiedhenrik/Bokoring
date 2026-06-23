@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireOrg } from "./helpers";
 
 export const viewer = query({
   args: {},
@@ -15,72 +16,68 @@ export const viewer = query({
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const me = await getAuthUserId(ctx);
-    if (!me) throw new Error("Inte inloggad");
-    const users = await ctx.db.query("users").collect();
+    const { userId: me, orgId } = await requireOrg(ctx);
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_org", (q) => q.eq("orgId", orgId))
+      .collect();
     const profiles = await ctx.db.query("userProfiles").collect();
     const nameById = new Map(profiles.map((p) => [p.userId, p.displayName]));
-    return users.map((u) => ({
-      _id: u._id,
-      email: u.email ?? null,
-      displayName:
-        nameById.get(u._id) || (u.email ? u.email.split("@")[0] : "Användare"),
-      isSelf: u._id === me,
-    }));
+    const out = [];
+    for (const m of memberships) {
+      const u = await ctx.db.get("users", m.userId);
+      if (!u) continue;
+      out.push({
+        _id: u._id,
+        email: u.email ?? null,
+        displayName:
+          nameById.get(u._id) || (u.email ? u.email.split("@")[0] : "Användare"),
+        isSelf: u._id === me,
+      });
+    }
+    return out;
   },
 });
 
-export const remove = mutation({
+// Remove a user from the active org: delete their membership and null their
+// ownership on this org's leads/tasks. Does not delete the user account.
+export const removeMember = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const me = await getAuthUserId(ctx);
-    if (!me) throw new Error("Inte inloggad");
-    if (me === userId) throw new Error("Du kan inte radera ditt eget konto");
+    const { userId: me, orgId } = await requireOrg(ctx);
+    if (me === userId) throw new Error("Du kan inte ta bort dig själv");
+
+    const membership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org", (q) => q.eq("userId", userId).eq("orgId", orgId))
+      .first();
+    if (!membership) throw new Error("Användaren är inte med i organisationen");
 
     const leads = await ctx.db
       .query("leads")
       .withIndex("by_agare", (q) => q.eq("agareId", userId))
       .collect();
-    for (const l of leads) await ctx.db.patch("leads", l._id, { agareId: undefined });
+    for (const l of leads) {
+      if (l.orgId === orgId) await ctx.db.patch("leads", l._id, { agareId: undefined });
+    }
     const tasks = await ctx.db
       .query("tasks")
       .withIndex("by_agare", (q) => q.eq("agareId", userId))
       .collect();
-    for (const t of tasks) await ctx.db.patch("tasks", t._id, { agareId: undefined });
-
-    const accounts = await ctx.db
-      .query("authAccounts")
-      .withIndex("userIdAndProvider", (q) => q.eq("userId", userId))
-      .collect();
-    for (const acc of accounts) {
-      const codes = await ctx.db
-        .query("authVerificationCodes")
-        .withIndex("accountId", (q) => q.eq("accountId", acc._id))
-        .collect();
-      for (const c of codes) await ctx.db.delete("authVerificationCodes", c._id);
-      await ctx.db.delete("authAccounts", acc._id);
+    for (const tk of tasks) {
+      if (tk.orgId === orgId) await ctx.db.patch("tasks", tk._id, { agareId: undefined });
     }
-    const sessions = await ctx.db
-      .query("authSessions")
-      .withIndex("userId", (q) => q.eq("userId", userId))
-      .collect();
-    for (const s of sessions) {
-      const tokens = await ctx.db
-        .query("authRefreshTokens")
-        .withIndex("sessionId", (q) => q.eq("sessionId", s._id))
-        .collect();
-      for (const tok of tokens) await ctx.db.delete("authRefreshTokens", tok._id);
-      await ctx.db.delete("authSessions", s._id);
-    }
-    // authVerifiers (transient PKCE rows) are intentionally not purged: they exist
-    // only for OAuth flows, this app uses the Password provider, and the table has
-    // no user/session index to query them cleanly. Any stray rows expire on their own.
 
-    const profile = await ctx.db
-      .query("userProfiles")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
-    if (profile) await ctx.db.delete("userProfiles", profile._id);
-    await ctx.db.delete("users", userId);
+    await ctx.db.delete("memberships", membership._id);
+
+    // If this was the user's active org, clear the pointer so they re-pick on next load.
+    const removed = await ctx.db.get("users", userId);
+    if (removed?.activeOrgId === orgId) {
+      const another = await ctx.db
+        .query("memberships")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .first();
+      await ctx.db.patch("users", userId, { activeOrgId: another?.orgId });
+    }
   },
 });

@@ -27,7 +27,7 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
   const myProfile = useQuery(api.userProfiles.myProfile);
   const users = useQuery(api.users.list) ?? [];
   const setMyName = useMutation(api.userProfiles.setMyName);
-  const removeUser = useMutation(api.users.remove);
+  const removeMember = useMutation(api.users.removeMember);
   const modal = useModal();
   const toast = useToast();
 
@@ -135,8 +135,8 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
               </div>
               {!u.isSelf && (
                 <button className="btn btn-ghost" onClick={async () => {
-                  if (!confirm(`Ta bort användaren "${u.displayName}"? Kort där hen är ansvarig blir utan ansvarig.`)) return;
-                  await removeUser({ userId: u._id });
+                  if (!confirm(`Ta bort "${u.displayName}" från organisationen? Kort där hen är ansvarig blir utan ansvarig.`)) return;
+                  await removeMember({ userId: u._id });
                   toast("Användare borttagen");
                 }}>
                   Ta bort
