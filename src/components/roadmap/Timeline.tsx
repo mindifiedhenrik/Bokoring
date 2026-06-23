@@ -11,9 +11,11 @@ type Milestone = {
   taskIds: Id<"tasks">[];
 };
 
+type LinkedTask = { id: string; titel: string; color: string };
+
 type Props = {
   milestones: Milestone[];
-  taskCount: (m: Milestone) => number;
+  linkedTasks: (m: Milestone) => LinkedTask[];
   zoomIndex: number;
   onZoom: (delta: number) => void;
   onOpen: (id: Id<"milestones">) => void;
@@ -24,7 +26,7 @@ const TODAY = new Date().toISOString().slice(0, 10);
 
 type Drag = { id: Id<"milestones">; startX: number; date: string; preview: string };
 
-export default function Timeline({ milestones, taskCount, zoomIndex, onZoom, onOpen, onSetDate }: Props) {
+export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, onOpen, onSetDate }: Props) {
   const pxPerDay = ZOOM_LEVELS[zoomIndex];
   const canvasRef = useRef<HTMLDivElement>(null);
   const movedRef = useRef(false);
@@ -96,17 +98,29 @@ export default function Timeline({ milestones, taskCount, zoomIndex, onZoom, onO
           const date = drag && drag.id === m._id ? drag.preview : m.datum;
           const x = dateToX(date, startDate, pxPerDay);
           const lane = i % 3;
-          const n = taskCount(m);
+          const linked = linkedTasks(m);
           return (
             <div key={m._id} className={"tl-ms lane-" + lane + (drag?.id === m._id ? " dragging" : "")} style={{ left: x }}>
               <span className="tl-dot" style={{ background: m.color }} />
+              <span className="tl-connector" />
               <div className="tl-card" style={{ borderLeftColor: m.color }}
                 onPointerDown={(e) => onPointerDown(e, m)} onClick={() => onCardClick(m._id)}>
                 <div className="tl-card-titel">{m.titel}</div>
                 <div className="tl-card-meta">
                   <span>{fmtDate(date)}</span>
-                  {n > 0 && <span className="tl-card-count">{n} kort</span>}
+                  {linked.length > 0 && <span className="tl-card-count">{linked.length} kort</span>}
                 </div>
+                {linked.length > 0 && (
+                  <div className="tl-pop">
+                    <div className="tl-pop-head">Kopplade uppgifter</div>
+                    {linked.map((t) => (
+                      <div key={t.id} className="tl-pop-row">
+                        <span className="tl-pop-dot" style={{ background: t.color }} />
+                        <span className="tl-pop-titel">{t.titel}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           );

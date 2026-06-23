@@ -11,15 +11,21 @@ import Timeline from "./Timeline";
 export default function RoadmapView() {
   const milestones = useQuery(api.milestones.list) ?? [];
   const tasks = useQuery(api.tasks.list) ?? [];
+  const projects = useQuery(api.projects.list) ?? [];
   const create = useMutation(api.milestones.create);
   const setDate = useMutation(api.milestones.setDate);
   const modal = useModal();
   const toast = useToast();
   const [zoomIndex, setZoomIndex] = useState(DEFAULT_ZOOM_INDEX);
 
-  const liveTaskIds = new Set(tasks.map((t) => t._id as string));
-  const taskCount = (m: { taskIds: Id<"tasks">[] }) =>
-    m.taskIds.filter((id) => liveTaskIds.has(id as string)).length;
+  const taskById = new Map(tasks.map((t) => [t._id as string, t]));
+  const projColor = new Map(projects.map((p) => [p._id as string, p.color]));
+  // Linked task cards for a milestone, dropping any whose task was since deleted.
+  const linkedTasks = (m: { taskIds: Id<"tasks">[] }) =>
+    m.taskIds
+      .map((id) => taskById.get(id as string))
+      .filter((t): t is NonNullable<typeof t> => Boolean(t))
+      .map((t) => ({ id: t._id as string, titel: t.titel, color: projColor.get(t.projectId as string) ?? "var(--line)" }));
 
   async function createMilestone() {
     const today = new Date().toISOString().slice(0, 10);
@@ -50,7 +56,7 @@ export default function RoadmapView() {
       ) : (
         <Timeline
           milestones={milestones}
-          taskCount={taskCount}
+          linkedTasks={linkedTasks}
           zoomIndex={zoomIndex}
           onZoom={zoom}
           onOpen={(id) => modal.openMilestoneDetail(id)}
