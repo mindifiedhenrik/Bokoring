@@ -77,3 +77,27 @@ test("milestones.remove deletes the milestone", async () => {
   await u.mutation(api.milestones.remove, { id });
   expect(await u.query(api.milestones.list, {})).toHaveLength(0);
 });
+
+test("milestones.linkTask ignores a task from another org", async () => {
+  const t = convexTest(schema, modules);
+  const orgA = await setupOrg(t, { joinCode: "MSXA1111", email: "mxa@firma.se" });
+  const orgB = await setupOrg(t, { joinCode: "MSXB1111", email: "mxb@firma.se" });
+  const projectIdB = await orgB.as.mutation(api.projects.create, { namn: "PB", beskrivning: "" });
+  const taskIdB = await orgB.as.mutation(api.tasks.create, { titel: "TB", beskrivning: "", projectId: projectIdB, status: "Backlog", prioritet: "Normal" });
+  const idA = await orgA.as.mutation(api.milestones.create, { titel: "MA", beskrivning: "", datum: "2026-03-01", color: "#c45b32" });
+  await orgA.as.mutation(api.milestones.linkTask, { id: idA, taskId: taskIdB });
+  const m = (await orgA.as.query(api.milestones.list, {})).find((x) => x._id === idA)!;
+  expect(m.taskIds).toEqual([]);
+});
+
+test("removing a task scrubs it from milestones that link it", async () => {
+  const t = convexTest(schema, modules);
+  const { as: u } = await setupOrg(t);
+  const projectId = await u.mutation(api.projects.create, { namn: "P", beskrivning: "" });
+  const taskId = await u.mutation(api.tasks.create, { titel: "T", beskrivning: "", projectId, status: "Backlog", prioritet: "Normal" });
+  const id = await u.mutation(api.milestones.create, { titel: "M", beskrivning: "", datum: "2026-03-01", color: "#c45b32" });
+  await u.mutation(api.milestones.linkTask, { id, taskId });
+  await u.mutation(api.tasks.remove, { id: taskId });
+  const m = (await u.query(api.milestones.list, {})).find((x) => x._id === id)!;
+  expect(m.taskIds).toEqual([]);
+});

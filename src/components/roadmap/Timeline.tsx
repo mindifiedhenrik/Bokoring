@@ -59,6 +59,11 @@ export default function Timeline({ milestones, taskCount, zoomIndex, onZoom, onO
     if (drag.preview !== drag.date) onSetDate(drag.id, drag.preview);
     setDrag(null);
   }
+  function onPointerCancel() {
+    // Interrupted gesture (e.g. OS pointercancel): abandon the drag without committing.
+    setDrag(null);
+    movedRef.current = false;
+  }
   function onCardClick(id: Id<"milestones">) {
     if (movedRef.current) { movedRef.current = false; return; }
     onOpen(id);
@@ -71,7 +76,7 @@ export default function Timeline({ milestones, taskCount, zoomIndex, onZoom, onO
 
   return (
     <div className="tl-scroll" onWheel={onWheel}>
-      <div ref={canvasRef} className="tl-canvas" style={{ width }} onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
+      <div ref={canvasRef} className="tl-canvas" style={{ width }} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>
         <div className="tl-axis">
           {ticks.map((t) => (
             <div key={t} className="tl-tick" style={{ left: dateToX(t, startDate, pxPerDay) }}>
