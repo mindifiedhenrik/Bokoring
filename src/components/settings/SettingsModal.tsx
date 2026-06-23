@@ -28,6 +28,9 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
   const users = useQuery(api.users.list) ?? [];
   const setMyName = useMutation(api.userProfiles.setMyName);
   const removeMember = useMutation(api.users.removeMember);
+  const rotateCode = useMutation(api.organizations.rotateCode);
+  const createOrg = useMutation(api.organizations.create);
+  const joinOrg = useMutation(api.organizations.join);
   const modal = useModal();
   const toast = useToast();
 
@@ -82,44 +85,47 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
           </div>
         </div>
 
-        <div className="section-label" style={{ marginTop: "14px" }}>Registreringskod</div>
+        <div className="section-label" style={{ marginTop: "14px" }}>Organisation</div>
         <div className="field">
-          <label>Kod för att skapa konto</label>
+          <label>Organisationskod (för att bjuda in)</label>
           {initial.joinCode ? (
             <>
               <div style={{ display: "flex", gap: "8px" }}>
                 <input type="text" readOnly value={initial.joinCode} style={{ flex: 1 }} />
-                <button
-                  className="btn btn-ghost"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(initial.joinCode!);
-                      toast("Kod kopierad");
-                    } catch {
-                      toast("Kunde inte kopiera");
-                    }
-                  }}
-                >
-                  Kopiera
-                </button>
+                <button className="btn btn-ghost" onClick={async () => {
+                  try { await navigator.clipboard.writeText(initial.joinCode!); toast("Kod kopierad"); }
+                  catch { toast("Kunde inte kopiera"); }
+                }}>Kopiera</button>
+                <button className="btn btn-ghost" onClick={async () => {
+                  if (!confirm("Byt organisationskod? Den gamla koden slutar fungera.")) return;
+                  await rotateCode({});
+                  toast("Ny kod skapad");
+                }}>Byt kod</button>
               </div>
               <div className="muted" style={{ fontSize: "12.5px", marginTop: "7px" }}>
-                Dela koden med personer som ska kunna registrera ett konto.{" "}
-                <a
-                  style={{ color: "var(--accent-deep)" }}
-                  href={`mailto:?subject=${encodeURIComponent("Inbjudan till Boköring CRM")}&body=${encodeURIComponent(
-                    `Hej!\n\nDu kan gå med i vår organisation i Boköring CRM med den här anslutningskoden:\n\n${initial.joinCode}\n\nÖppna appen och ange koden för att gå med.`,
-                  )}`}
-                >
-                  Skicka i mejl
-                </a>
+                Dela koden med personer som ska gå med i organisationen.
               </div>
             </>
           ) : (
-            <div className="muted" style={{ fontSize: "12.5px" }}>
-              Ingen anslutningskod hittades.
-            </div>
+            <div className="muted" style={{ fontSize: "12.5px" }}>Ingen kod tillgänglig.</div>
           )}
+        </div>
+        <div className="field">
+          <label>Skapa eller gå med i en organisation</label>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button className="btn btn-ghost" onClick={async () => {
+              const namn = prompt("Namn på den nya organisationen?");
+              if (!namn) return;
+              const { joinCode } = await createOrg({ namn });
+              toast(`Organisation skapad · kod ${joinCode}`);
+            }}>Ny organisation</button>
+            <button className="btn btn-ghost" onClick={async () => {
+              const code = prompt("Ange organisationskod att gå med i:");
+              if (!code) return;
+              try { await joinOrg({ code }); toast("Gick med i organisationen"); }
+              catch { toast("Ogiltig kod"); }
+            }}>Gå med via kod</button>
+          </div>
         </div>
 
         <div className="section-label" style={{ marginTop: "14px" }}>Användare ({users.length})</div>
