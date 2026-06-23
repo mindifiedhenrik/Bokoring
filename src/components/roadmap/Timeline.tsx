@@ -124,6 +124,8 @@ export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, o
     if ((e.target as HTMLElement).closest(".tl-card")) return;
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
+    // Only create when the click lands on or near the timeline axis.
+    if (Math.abs(e.clientY - rect.top - LINE_Y) > 40) return;
     onCreateAt(xToDate(e.clientX - rect.left, startDate, pxPerDay));
   }
 
