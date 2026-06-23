@@ -34,6 +34,7 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_org", ["orgId"])
     .index("by_user_org", ["userId", "orgId"]),
+  // Reminder: ansvarig (user), datum (ISO date), kort text — alla valfria.
   contacts: defineTable({
     orgId: v.optional(v.id("organizations")),
     namn: v.string(),
@@ -92,6 +93,8 @@ export default defineSchema({
     userId: v.id("users"),
     displayName: v.string(),
   }).index("by_user", ["userId"]),
+  // Short notes attached to a contact. Creation time + author come from
+  // `_creationTime` and `authorId`.
   notes: defineTable({
     orgId: v.optional(v.id("organizations")),
     contactId: v.id("contacts"),
@@ -100,6 +103,7 @@ export default defineSchema({
   })
     .index("by_contact", ["contactId"])
     .index("by_org", ["orgId"]),
+  // Per-user read marker for a contact's notes (for the unread dot).
   contactReads: defineTable({
     userId: v.id("users"),
     contactId: v.id("contacts"),
