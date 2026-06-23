@@ -13,7 +13,18 @@ import Pile from "./Pile";
 export default function TasksView() {
   const projects = useQuery(api.projects.list) ?? [];
   const tasks = useQuery(api.tasks.list) ?? [];
+  const milestones = useQuery(api.milestones.list) ?? [];
   const settings = useQuery(api.settings.get) ?? { archiveDays: 3, pileThreshold: 3 };
+
+  // Earliest milestone date a task is linked to (a task may belong to several).
+  const milestoneDateByTask = new Map<string, string>();
+  for (const m of milestones) {
+    for (const tid of m.taskIds) {
+      const key = tid as string;
+      const cur = milestoneDateByTask.get(key);
+      if (!cur || m.datum < cur) milestoneDateByTask.set(key, m.datum);
+    }
+  }
 
   const users = useQuery(api.users.list) ?? [];
   const move = useMutation(api.tasks.move);
@@ -261,6 +272,7 @@ export default function TasksView() {
                                     projectColor={p.color}
                                     archiveDays={archiveDays}
                                     ownerName={ownerName(users, item.agareId)}
+                                    milestoneDate={milestoneDateByTask.get(item._id as string)}
                                     onClick={() => modal.openTaskDetail(item._id)}
                                     onDragStart={() => setDragId(item._id)}
                                     onDragEnd={clearDrag}

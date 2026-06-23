@@ -421,6 +421,13 @@
   .task-card .age.warn { background: #f7e0d8; color: #a8341d; }
   .task-card .tm { display: flex; align-items: center; gap: 8px; }
   .task-card .task-owner { margin-left: auto; font-size: 11.5px; color: var(--ink-faint); }
+  /* Flag shown on tasks linked to a roadmap milestone (milestone date). */
+  .task-card .task-flag {
+    display: inline-flex; align-items: center; gap: 4px; margin-top: 9px;
+    font-size: 11px; font-weight: 600; color: var(--accent-deep);
+    background: var(--accent-soft); padding: 2px 8px; border-radius: 999px;
+  }
+  .task-card .task-flag svg { width: 11px; height: 11px; }
   .prio { font-size: 10.5px; font-weight: 700; letter-spacing: .3px; padding: 2px 9px; border-radius: 20px; }
   .prio.low { background: #e7eee2; color: #4f7a52; }
   .prio.normal { background: #e6edf3; color: #4a6480; }
@@ -696,7 +703,9 @@
   }
 
   .tl-scroll { overflow-x: auto; overflow-y: hidden; padding: 0 0 24px; }
-  .tl-canvas { position: relative; min-height: 470px; padding-top: 56px; }
+  /* No text selection on the canvas — dragging cards over each other must not
+     start a selection of card or axis-label text. */
+  .tl-canvas { position: relative; min-height: 470px; padding-top: 56px; user-select: none; -webkit-user-select: none; }
 
   .tl-axis { position: absolute; top: 0; left: 0; right: 0; height: 40px; }
   .tl-tick { position: absolute; top: 0; height: 100%; border-left: 1px solid var(--line); }
