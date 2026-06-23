@@ -1,12 +1,15 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "./helpers";
+import { requireOrg } from "./helpers";
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    await requireAuth(ctx);
-    const rows = await ctx.db.query("tasks").collect();
+    const { orgId } = await requireOrg(ctx);
+    const rows = await ctx.db
+      .query("tasks")
+      .withIndex("by_org", (q) => q.eq("orgId", orgId))
+      .collect();
     return rows.sort((a, b) => (a.order ?? a._creationTime) - (b.order ?? b._creationTime));
   },
 });
@@ -23,18 +26,18 @@ const fields = {
 export const create = mutation({
   args: fields,
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    const { orgId } = await requireOrg(ctx);
     const log = [{ ts: new Date().toISOString(), from: null, to: args.status }];
-    return await ctx.db.insert("tasks", { ...args, archived: false, archivedAt: null, log, order: Date.now() });
+    return await ctx.db.insert("tasks", { ...args, orgId, archived: false, archivedAt: null, log, order: Date.now() });
   },
 });
 
 export const update = mutation({
   args: { id: v.id("tasks"), ...fields },
   handler: async (ctx, { id, ...patch }) => {
-    await requireAuth(ctx);
+    const { orgId } = await requireOrg(ctx);
     const prev = await ctx.db.get("tasks", id);
-    if (!prev) throw new Error("Uppgift saknas");
+    if (!prev || prev.orgId !== orgId) throw new Error("Uppgift saknas");
     const log = [...prev.log];
     const ts = new Date().toISOString();
     if (prev.projectId !== patch.projectId) {
@@ -52,9 +55,9 @@ export const update = mutation({
 export const move = mutation({
   args: { id: v.id("tasks"), projectId: v.id("projects"), status: v.string(), order: v.optional(v.number()) },
   handler: async (ctx, { id, projectId, status, order }) => {
-    await requireAuth(ctx);
+    const { orgId } = await requireOrg(ctx);
     const prev = await ctx.db.get("tasks", id);
-    if (!prev) return;
+    if (!prev || prev.orgId !== orgId) return;
     if (prev.projectId === projectId && prev.status === status) return;
     const log = [...prev.log];
     const ts = new Date().toISOString();
@@ -73,7 +76,9 @@ export const move = mutation({
 export const reorder = mutation({
   args: { id: v.id("tasks"), order: v.number() },
   handler: async (ctx, { id, order }) => {
-    await requireAuth(ctx);
+    const { orgId } = await requireOrg(ctx);
+    const prev = await ctx.db.get("tasks", id);
+    if (!prev || prev.orgId !== orgId) return;
     await ctx.db.patch("tasks", id, { order });
   },
 });
@@ -81,7 +86,9 @@ export const reorder = mutation({
 export const remove = mutation({
   args: { id: v.id("tasks") },
   handler: async (ctx, { id }) => {
-    await requireAuth(ctx);
+    const { orgId } = await requireOrg(ctx);
+    const prev = await ctx.db.get("tasks", id);
+    if (!prev || prev.orgId !== orgId) return;
     await ctx.db.delete("tasks", id);
   },
 });
@@ -89,9 +96,9 @@ export const remove = mutation({
 export const restore = mutation({
   args: { id: v.id("tasks") },
   handler: async (ctx, { id }) => {
-    await requireAuth(ctx);
+    const { orgId } = await requireOrg(ctx);
     const prev = await ctx.db.get("tasks", id);
-    if (!prev) return;
+    if (!prev || prev.orgId !== orgId) return;
     const log = [...prev.log, { ts: new Date().toISOString(), restored: true }];
     await ctx.db.patch("tasks", id, { archived: false, archivedAt: null, log });
   },
