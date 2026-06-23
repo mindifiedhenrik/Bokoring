@@ -41,16 +41,16 @@ export default function TaskCard({ task, projectColor, archiveDays, ownerName, m
       <div className="tm">
         <span className={"prio " + cls}>{task.prioritet || "Normal"}</span>
         {ownerName ? <span className="task-owner">{ownerName}</span> : null}
+        {milestoneDate ? (
+          <span className="task-flag" title={"Milstolpe: " + fmtDate(milestoneDate)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+              <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+            {fmtDate(milestoneDate)}
+          </span>
+        ) : null}
       </div>
-      {milestoneDate ? (
-        <span className="task-flag" title={"Milstolpe: " + fmtDate(milestoneDate)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-            <line x1="4" y1="22" x2="4" y2="15" />
-          </svg>
-          {fmtDate(milestoneDate)}
-        </span>
-      ) : null}
     </div>
   );
 }

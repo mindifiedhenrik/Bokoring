@@ -421,12 +421,15 @@
   .task-card .age.warn { background: #f7e0d8; color: #a8341d; }
   .task-card .tm { display: flex; align-items: center; gap: 8px; }
   .task-card .task-owner { margin-left: auto; font-size: 11.5px; color: var(--ink-faint); }
-  /* Flag shown on tasks linked to a roadmap milestone (milestone date). */
+  /* Flag shown on tasks linked to a roadmap milestone (milestone date), pinned to
+     the right of the priority row. margin-left:auto pushes it right; when an owner
+     precedes it, the owner's own auto-margin already pushes the group right. */
   .task-card .task-flag {
-    display: inline-flex; align-items: center; gap: 4px; margin-top: 9px;
+    display: inline-flex; align-items: center; gap: 4px; margin-left: auto;
     font-size: 11px; font-weight: 600; color: var(--accent-deep);
     background: var(--accent-soft); padding: 2px 8px; border-radius: 999px;
   }
+  .task-card .tm .task-owner + .task-flag { margin-left: 0; }
   .task-card .task-flag svg { width: 11px; height: 11px; }
   .prio { font-size: 10.5px; font-weight: 700; letter-spacing: .3px; padding: 2px 9px; border-radius: 20px; }
   .prio.low { background: #e7eee2; color: #4f7a52; }
