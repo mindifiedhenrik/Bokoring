@@ -423,12 +423,15 @@
   .task-card .task-owner { margin-left: auto; font-size: 11.5px; color: var(--ink-faint); }
   /* Flag shown on tasks linked to a roadmap milestone (milestone date), pinned to
      the right of the priority row. margin-left:auto pushes it right; when an owner
-     precedes it, the owner's own auto-margin already pushes the group right. */
+     precedes it, the owner's own auto-margin already pushes the group right.
+     Colour-coded by date proximity, same palette as the contact reminder dots. */
   .task-card .task-flag {
     display: inline-flex; align-items: center; gap: 4px; margin-left: auto;
-    font-size: 11px; font-weight: 600; color: var(--accent-deep);
-    background: var(--accent-soft); padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
   }
+  .task-card .task-flag.green { background: #e6f1ea; color: #2f7d46; }
+  .task-card .task-flag.yellow { background: #f6ecd2; color: #8a6a12; }
+  .task-card .task-flag.red { background: #f6ddd9; color: #a8341d; }
   .task-card .tm .task-owner + .task-flag { margin-left: 0; }
   .task-card .task-flag svg { width: 11px; height: 11px; }
   .prio { font-size: 10.5px; font-weight: 700; letter-spacing: .3px; padding: 2px 9px; border-radius: 20px; }

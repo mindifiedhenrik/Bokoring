@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { initials, fmtDate } from "../../lib/format";
+import { initials, fmtDate, dateProximityColor } from "../../lib/format";
 import { ownerName } from "../../lib/users";
 import { useModal } from "../../context/ModalContext";
 
@@ -24,12 +24,7 @@ export default function ContactsView() {
     leads.filter((l) => l.contactId === id).length;
 
   // Green > 2 weeks out, yellow up to and including the reminder date, red once passed.
-  function remColor(datum: string) {
-    const days = Math.round((new Date(datum).getTime() - new Date(today).getTime()) / 86400000);
-    if (days < 0) return "red";
-    if (days <= 14) return "yellow";
-    return "green";
-  }
+  const remColor = (datum: string) => dateProximityColor(datum, today);
 
   const sorted = [...contacts].sort((a, b) => {
     if (sort === "reminder") {

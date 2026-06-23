@@ -1,7 +1,7 @@
 import type React from "react";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { PRIORITY_CLASS } from "../../lib/constants";
-import { daysSinceMove, fmtDate } from "../../lib/format";
+import { daysSinceMove, fmtDate, dateProximityColor } from "../../lib/format";
 
 interface TaskCardProps {
   task: Doc<"tasks">;
@@ -42,7 +42,7 @@ export default function TaskCard({ task, projectColor, archiveDays, ownerName, m
         <span className={"prio " + cls}>{task.prioritet || "Normal"}</span>
         {ownerName ? <span className="task-owner">{ownerName}</span> : null}
         {milestoneDate ? (
-          <span className="task-flag" title={"Milstolpe: " + fmtDate(milestoneDate)}>
+          <span className={"task-flag " + dateProximityColor(milestoneDate)} title={"Milstolpe: " + fmtDate(milestoneDate)}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
               <line x1="4" y1="22" x2="4" y2="15" />

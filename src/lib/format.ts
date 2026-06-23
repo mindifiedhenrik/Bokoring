@@ -22,3 +22,13 @@ export function lastMovedTs(t: WithLog) {
 export function daysSinceMove(t: WithLog) {
   return Math.max(0, Math.floor((Date.now() - lastMovedTs(t)) / 86400000));
 }
+
+// Date-proximity colour shared by contact reminders and roadmap milestone flags:
+// red once the date has passed, yellow within two weeks, green further out.
+export function dateProximityColor(datum: string, today?: string): "red" | "yellow" | "green" {
+  const ref = today ?? new Date().toISOString().slice(0, 10);
+  const days = Math.round((new Date(datum).getTime() - new Date(ref).getTime()) / 86400000);
+  if (days < 0) return "red";
+  if (days <= 14) return "yellow";
+  return "green";
+}
