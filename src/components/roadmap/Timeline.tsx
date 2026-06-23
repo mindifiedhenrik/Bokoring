@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { ZOOM_LEVELS, addDays, dateToX, daysBetween, monthTicks, timelineWindow } from "../../lib/timeline";
+import { ZOOM_LEVELS, addDays, dateToX, daysBetween, monthTicks, timelineWindow, xToDate } from "../../lib/timeline";
 import { fmtDate } from "../../lib/format";
 
 type Milestone = {
@@ -21,6 +21,7 @@ type Props = {
   onZoom: (delta: number) => void;
   onOpen: (id: Id<"milestones">) => void;
   onSetPosition: (id: Id<"milestones">, datum: string, lane: number) => void;
+  onCreateAt: (datum: string) => void;
 };
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -45,7 +46,7 @@ type Drag = {
 
 type Pending = { id: Id<"milestones">; date: string; lane: number };
 
-export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, onOpen, onSetPosition }: Props) {
+export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, onOpen, onSetPosition, onCreateAt }: Props) {
   const pxPerDay = ZOOM_LEVELS[zoomIndex];
   const canvasRef = useRef<HTMLDivElement>(null);
   const movedRef = useRef(false);
@@ -117,12 +118,21 @@ export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, o
   function onWheel(e: React.WheelEvent) {
     if (e.ctrlKey || e.metaKey) { e.preventDefault(); onZoom(e.deltaY < 0 ? 1 : -1); }
   }
+  function onCanvasClick(e: React.MouseEvent) {
+    // Ignore clicks on a card (those open it) and the click that ends a drag.
+    if (movedRef.current) { movedRef.current = false; return; }
+    if ((e.target as HTMLElement).closest(".tl-card")) return;
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    onCreateAt(xToDate(e.clientX - rect.left, startDate, pxPerDay));
+  }
 
   const todayX = dateToX(TODAY, startDate, pxPerDay);
 
   return (
     <div className="tl-scroll" onWheel={onWheel}>
       <div ref={canvasRef} className="tl-canvas" style={{ width, minHeight }}
+        onClick={onCanvasClick}
         onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>
         <div className="tl-axis">
           {ticks.map((t) => (

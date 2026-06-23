@@ -708,7 +708,7 @@
   .tl-scroll { overflow-x: auto; overflow-y: hidden; padding: 0 0 24px; }
   /* No text selection on the canvas — dragging cards over each other must not
      start a selection of card or axis-label text. */
-  .tl-canvas { position: relative; min-height: 470px; padding-top: 56px; user-select: none; -webkit-user-select: none; }
+  .tl-canvas { position: relative; min-height: 470px; padding-top: 56px; user-select: none; -webkit-user-select: none; cursor: crosshair; }
 
   .tl-axis { position: absolute; top: 0; left: 0; right: 0; height: 40px; }
   .tl-tick { position: absolute; top: 0; height: 100%; border-left: 1px solid var(--line); }

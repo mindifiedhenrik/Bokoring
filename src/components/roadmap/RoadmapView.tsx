@@ -28,9 +28,9 @@ export default function RoadmapView() {
       .filter((t): t is NonNullable<typeof t> => Boolean(t))
       .map((t) => ({ id: t._id as string, titel: t.titel, color: projColor.get(t.projectId as string) ?? "var(--line)" }));
 
-  async function createMilestone() {
-    const today = new Date().toISOString().slice(0, 10);
-    const id = await create({ titel: "Namnlös milstolpe", beskrivning: "", datum: today, color: MILESTONE_COLORS[0] });
+  async function createMilestone(datum?: string) {
+    const d = datum ?? new Date().toISOString().slice(0, 10);
+    const id = await create({ titel: "Namnlös milstolpe", beskrivning: "", datum: d, color: MILESTONE_COLORS[0] });
     modal.openMilestoneDetail(id);
   }
   function zoom(delta: number) {
@@ -52,7 +52,10 @@ export default function RoadmapView() {
   return (
     <>
       <div className="topbar">
-        <h1>Roadmap</h1>
+        <div>
+          <h1>Roadmap</h1>
+          {milestones.length > 0 && <div className="lead-sub">Klicka på tidslinjen för att lägga till en milstolpe.</div>}
+        </div>
         <div className="spacer" />
         <div className="tl-zoom">
           <button className="btn btn-ghost" onClick={() => zoom(-1)} disabled={zoomIndex === 0} aria-label="Zooma ut">−</button>
@@ -62,7 +65,7 @@ export default function RoadmapView() {
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="15" y2="12" /><line x1="3" y1="18" x2="9" y2="18" /></svg>
           Ordna
         </button>
-        <button className="btn btn-primary" onClick={createMilestone}>
+        <button className="btn btn-primary" onClick={() => createMilestone()}>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
           Ny milstolpe
         </button>
@@ -78,6 +81,7 @@ export default function RoadmapView() {
           onZoom={zoom}
           onOpen={(id) => modal.openMilestoneDetail(id)}
           onSetPosition={async (id, datum, lane) => { await setPosition({ id, datum, lane }); }}
+          onCreateAt={(datum) => createMilestone(datum)}
         />
       )}
     </>
