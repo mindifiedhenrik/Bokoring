@@ -15,6 +15,7 @@ import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
 import type * as leads from "../leads.js";
 import type * as migrations from "../migrations.js";
+import type * as milestones from "../milestones.js";
 import type * as notes from "../notes.js";
 import type * as organizations from "../organizations.js";
 import type * as projects from "../projects.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   leads: typeof leads;
   migrations: typeof migrations;
+  milestones: typeof milestones;
   notes: typeof notes;
   organizations: typeof organizations;
   projects: typeof projects;
