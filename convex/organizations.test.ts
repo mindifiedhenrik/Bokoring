@@ -89,3 +89,29 @@ test("myOrgs lists the user's orgs and the active one", async () => {
   expect(result.activeOrgId).toBe(o1);
   expect(result.orgs.map((o) => o._id).sort()).toEqual([o1, o2].sort());
 });
+
+test("rename changes the active org's name", async () => {
+  const t = convexTest(schema, modules);
+  const orgId = await t.run((ctx) => ctx.db.insert("organizations", { namn: "Gammalt", joinCode: "RENAME11" }));
+  const userId = await t.run(async (ctx) => {
+    const uid = await ctx.db.insert("users", { email: "x@firma.se", activeOrgId: orgId });
+    await ctx.db.insert("memberships", { userId: uid, orgId });
+    return uid;
+  });
+  const as = t.withIdentity({ subject: `${userId}|s` });
+  await as.mutation(api.organizations.rename, { namn: "  Nytt namn  " });
+  const org = await t.run((ctx) => ctx.db.get("organizations", orgId));
+  expect(org?.namn).toBe("Nytt namn");
+});
+
+test("rename rejects a blank name", async () => {
+  const t = convexTest(schema, modules);
+  const orgId = await t.run((ctx) => ctx.db.insert("organizations", { namn: "Org", joinCode: "RENAME22" }));
+  const userId = await t.run(async (ctx) => {
+    const uid = await ctx.db.insert("users", { email: "x@firma.se", activeOrgId: orgId });
+    await ctx.db.insert("memberships", { userId: uid, orgId });
+    return uid;
+  });
+  const as = t.withIdentity({ subject: `${userId}|s` });
+  await expect(as.mutation(api.organizations.rename, { namn: "   " })).rejects.toThrow();
+});

@@ -122,3 +122,14 @@ export const current = query({
     return org ? { _id: org._id, namn: org.namn, joinCode: org.joinCode } : null;
   },
 });
+
+// Rename the active org (any member may rename — flat roles).
+export const rename = mutation({
+  args: { namn: v.string() },
+  handler: async (ctx, { namn }) => {
+    const { orgId } = await requireOrg(ctx);
+    const clean = namn.trim();
+    if (!clean) throw new Error("Namn krävs");
+    await ctx.db.patch("organizations", orgId, { namn: clean });
+  },
+});

@@ -31,6 +31,8 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
   const rotateCode = useMutation(api.organizations.rotateCode);
   const createOrg = useMutation(api.organizations.create);
   const joinOrg = useMutation(api.organizations.join);
+  const renameOrg = useMutation(api.organizations.rename);
+  const currentOrg = useQuery(api.organizations.current);
   const modal = useModal();
   const toast = useToast();
 
@@ -38,10 +40,16 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
   const [archive, setArchive] = useState(String(initial.archiveDays));
   const [name, setName] = useState("");
   const [nameInit, setNameInit] = useState(false);
+  const [orgName, setOrgName] = useState("");
+  const [orgNameInit, setOrgNameInit] = useState(false);
 
   useEffect(() => {
     if (myProfile && !nameInit) { setName(myProfile.displayName); setNameInit(true); }
   }, [myProfile, nameInit]);
+
+  useEffect(() => {
+    if (currentOrg && !orgNameInit) { setOrgName(currentOrg.namn); setOrgNameInit(true); }
+  }, [currentOrg, orgNameInit]);
 
   const archived = tasks
     .filter((t) => t.archived)
@@ -86,6 +94,29 @@ function SettingsBody({ initial }: { initial: { archiveDays: number; pileThresho
         </div>
 
         <div className="section-label" style={{ marginTop: "14px" }}>Organisation</div>
+        <div className="field">
+          <label>Organisationens namn</label>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <input
+              type="text"
+              value={orgName}
+              placeholder="Organisationens namn"
+              onChange={(e) => setOrgName(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button
+              className="btn btn-ghost"
+              onClick={async () => {
+                const clean = orgName.trim();
+                if (!clean) { toast("Namn krävs"); return; }
+                await renameOrg({ namn: clean });
+                toast("Namn sparat");
+              }}
+            >
+              Spara namn
+            </button>
+          </div>
+        </div>
         <div className="field">
           <label>Organisationskod (för att bjuda in)</label>
           {initial.joinCode ? (
