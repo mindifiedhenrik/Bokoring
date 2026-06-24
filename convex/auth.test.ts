@@ -78,7 +78,7 @@ test("signUp with a valid org code creates a membership and active org", async (
   );
   await t.action(api.auth.signIn, {
     provider: "password",
-    params: { email: "new@firma.se", password: "hunter2hunter", flow: "signUp", code: "JOINACME" },
+    params: { email: "new@firma.se", password: "hunter2hunter", flow: "signUp", joinCode: "JOINACME" },
   });
   const state = await t.run(async (ctx) => {
     const user = await ctx.db
@@ -91,10 +91,17 @@ test("signUp with a valid org code creates a membership and active org", async (
           .withIndex("by_user_org", (q) => q.eq("userId", user._id).eq("orgId", orgId))
           .first()
       : null;
-    return { activeOrgId: user?.activeOrgId, hasMembership: !!membership };
+    return {
+      activeOrgId: user?.activeOrgId,
+      hasMembership: !!membership,
+      emailVerificationTime: user?.emailVerificationTime,
+    };
   });
   expect(state.activeOrgId).toBe(orgId);
   expect(state.hasMembership).toBe(true);
+  // Sign-up creates the row + membership but does NOT verify the email — this is
+  // the attacker-seeded-row property the linking hardening defends against.
+  expect(state.emailVerificationTime).toBeUndefined();
 });
 
 test("signUp with an unknown code is rejected", async () => {
@@ -102,7 +109,7 @@ test("signUp with an unknown code is rejected", async () => {
   await expect(
     t.action(api.auth.signIn, {
       provider: "password",
-      params: { email: "x@firma.se", password: "hunter2hunter", flow: "signUp", code: "NOPECODE" },
+      params: { email: "x@firma.se", password: "hunter2hunter", flow: "signUp", joinCode: "NOPECODE" },
     }),
   ).rejects.toThrow();
 });

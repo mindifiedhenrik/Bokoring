@@ -1,6 +1,7 @@
 import Google from "@auth/core/providers/google";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
+import { ResendOTP } from "./ResendOTP";
 import { ConvexError } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { DatabaseReader, DatabaseWriter } from "./_generated/server";
@@ -35,10 +36,11 @@ export async function findLinkableUserByEmail(
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Password({
-      // On sign-up the `code` must match an organization's join code; the new
-      // user is enrolled into that org (membership + activeOrgId set in
-      // `createOrUpdateUser` below). Sign-in of existing accounts is unaffected
-      // (no code required).
+      // On sign-up the `joinCode` param must match an organization's join code;
+      // the new user is enrolled into that org (membership + activeOrgId set in
+      // `createOrUpdateUser` below). Sign-up additionally requires email OTP
+      // verification (see `verify: ResendOTP`) before a session is issued.
+      // Sign-in of existing accounts requires no join code.
       //
       // NOTE: `@convex-dev/auth` 0.0.94 calls this `profile` synchronously (it
       // does NOT await the result), so we cannot do the async org lookup here.
@@ -48,12 +50,13 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       profile(params): { email: string; joinCode?: string } {
         const email = params.email as string;
         if (params.flow === "signUp") {
-          const code = (params.code as string | undefined)?.trim();
+          const code = (params.joinCode as string | undefined)?.trim();
           if (!code) throw new ConvexError("Organisationskod krävs");
           return { email, joinCode: code };
         }
         return { email };
       },
+      verify: ResendOTP,
     }),
     Google,
   ],
