@@ -735,11 +735,14 @@
      interactive) so a milestone's connector/box never blocks clicking or
      dragging a card that sits beneath it in an upper row. */
   .tl-ms { position: absolute; top: 100px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+  /* Dot and connector carry pointer-events:none EXPLICITLY (not just inherited
+     from .tl-ms): Safari can leave the connector hit-testable otherwise, so its
+     line intercepts clicks for any card it visually overlaps in an upper row. */
   .tl-ms .tl-dot {
     width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--card);
-    box-shadow: var(--shadow-sm); margin-top: -6px;
+    box-shadow: var(--shadow-sm); margin-top: -6px; pointer-events: none;
   }
-  .tl-connector { width: 2px; background: var(--line); flex: none; }
+  .tl-connector { width: 2px; background: var(--line); flex: none; pointer-events: none; }
   .tl-ms.dragging { z-index: 5; }
   .tl-ms.dragging .tl-connector { background: var(--accent); }
 
