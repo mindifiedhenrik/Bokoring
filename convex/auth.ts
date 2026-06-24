@@ -1,3 +1,4 @@
+import Google from "@auth/core/providers/google";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import { ConvexError } from "convex/values";
@@ -41,13 +42,14 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         return { email };
       },
     }),
+    Google,
   ],
   callbacks: {
     // Awaited mutation callback with `ctx.db`. Resolves the join code to an org,
     // creates/links the user, sets the active org, and creates the membership.
     // The callback ctx is typed against a generic data model, so we narrow `db`
     // to this deployment's generated DatabaseWriter for index/table typing.
-    async createOrUpdateUser(ctx, { existingUserId, profile }) {
+    async createOrUpdateUser(ctx, { existingUserId, type, profile }) {
       const db = ctx.db as unknown as DatabaseWriter;
       const joinCode = (profile as { joinCode?: string }).joinCode?.trim();
       let orgId: Id<"organizations"> | undefined;
@@ -62,20 +64,41 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 
       // Never persist the transient `joinCode` onto the user document.
       const { joinCode: _omit, ...rest } = profile as Record<string, unknown>;
-      const userData = { ...rest, ...(orgId ? { activeOrgId: orgId } : null) };
 
-      let userId: Id<"users">;
-      if (existingUserId) {
-        userId = existingUserId as Id<"users">;
+      // A custom createOrUpdateUser bypasses the library's built-in email
+      // linking, so do it ourselves: on an OAuth sign-in (Google verifies the
+      // email) with no pre-existing account for this provider, link to the
+      // unique existing user with the same email.
+      let userId: Id<"users"> | null = (existingUserId as Id<"users"> | null) ?? null;
+      if (userId === null && type === "oauth" && typeof rest.email === "string") {
+        const linked = await findUserByEmail(db, rest.email);
+        if (linked) userId = linked._id;
+      }
+
+      const userData = {
+        ...rest,
+        ...(orgId ? { activeOrgId: orgId } : null),
+        // Google emails are verified; record it so future linking is automatic.
+        ...(type === "oauth" ? { emailVerificationTime: Date.now() } : null),
+      };
+
+      let isNew = false;
+      if (userId) {
         await db.patch(userId, userData);
       } else {
         userId = await db.insert("users", userData);
+        isNew = true;
+      }
+
+      // Seed a display name from the Google profile on first creation.
+      if (isNew && type === "oauth" && typeof rest.name === "string" && rest.name.trim()) {
+        await db.insert("userProfiles", { userId, displayName: rest.name.trim() });
       }
 
       if (orgId) {
         const existing = await db
           .query("memberships")
-          .withIndex("by_user_org", (q) => q.eq("userId", userId).eq("orgId", orgId!))
+          .withIndex("by_user_org", (q) => q.eq("userId", userId!).eq("orgId", orgId!))
           .first();
         if (!existing) await db.insert("memberships", { userId, orgId });
       }
