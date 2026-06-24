@@ -19,6 +19,19 @@ export async function findUserByEmail(
   return users.length === 1 ? users[0] : null;
 }
 
+// Return a *linkable* match only: a unique existing user whose email is
+// verified. OAuth linking uses this so an unverified account — e.g. one an
+// attacker pre-registered under a victim's email via the password flow — is
+// never linked into. See
+// docs/superpowers/specs/2026-06-24-email-verification-hardening-design.md.
+export async function findLinkableUserByEmail(
+  db: DatabaseReader,
+  email: string,
+): Promise<Doc<"users"> | null> {
+  const user = await findUserByEmail(db, email);
+  return user && user.emailVerificationTime != null ? user : null;
+}
+
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Password({
