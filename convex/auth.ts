@@ -69,6 +69,13 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       // linking, so do it ourselves: on an OAuth sign-in (Google verifies the
       // email) with no pre-existing account for this provider, link to the
       // unique existing user with the same email.
+      //
+      // ACCEPTED RISK: we do NOT require the existing account's email to be
+      // verified before linking. Password sign-up does not verify emails today,
+      // so requiring it would stop Google from ever linking to a password
+      // account. The exposure is bounded because password registration already
+      // requires a valid org join code. FOLLOW-UP: once the password flow
+      // verifies emails, gate this on `linked.emailVerificationTime`.
       let userId: Id<"users"> | null = (existingUserId as Id<"users"> | null) ?? null;
       if (userId === null && type === "oauth" && typeof rest.email === "string") {
         const linked = await findUserByEmail(db, rest.email);
