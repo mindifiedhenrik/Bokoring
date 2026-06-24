@@ -1,8 +1,22 @@
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import { ConvexError } from "convex/values";
-import { Id } from "./_generated/dataModel";
-import { DatabaseWriter } from "./_generated/server";
+import { Doc, Id } from "./_generated/dataModel";
+import { DatabaseReader, DatabaseWriter } from "./_generated/server";
+
+// Find the unique existing user with this email. Returns null when none match
+// or when the email is ambiguous (more than one user), mirroring the library's
+// own "unique verified email" linking rule.
+export async function findUserByEmail(
+  db: DatabaseReader,
+  email: string,
+): Promise<Doc<"users"> | null> {
+  const users = await db
+    .query("users")
+    .withIndex("email", (q) => q.eq("email", email))
+    .take(2);
+  return users.length === 1 ? users[0] : null;
+}
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
