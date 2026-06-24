@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
+import { Authenticated, Unauthenticated, AuthLoading, useQuery } from "convex/react";
+import { api } from "../convex/_generated/api";
 import LoginScreen from "./components/LoginScreen";
+import JoinOrgScreen from "./components/JoinOrgScreen";
 import Sidebar from "./components/Sidebar";
 import ModalHost from "./components/ModalHost";
 import { ToastProvider } from "./context/ToastContext";
@@ -30,19 +32,28 @@ function Workspace() {
   );
 }
 
+function AuthedApp() {
+  const orgState = useQuery(api.organizations.myOrgs);
+  if (orgState === undefined) return <div className="boot">Laddar…</div>;
+  if (!orgState.activeOrgId) return <JoinOrgScreen />;
+  return (
+    <ToastProvider>
+      <ModalProvider>
+        <OrgProvider>
+          <Workspace />
+        </OrgProvider>
+      </ModalProvider>
+    </ToastProvider>
+  );
+}
+
 export default function App() {
   return (
     <>
       <AuthLoading><div className="boot">Laddar…</div></AuthLoading>
       <Unauthenticated><LoginScreen /></Unauthenticated>
       <Authenticated>
-        <ToastProvider>
-          <ModalProvider>
-            <OrgProvider>
-              <Workspace />
-            </OrgProvider>
-          </ModalProvider>
-        </ToastProvider>
+        <AuthedApp />
       </Authenticated>
     </>
   );
