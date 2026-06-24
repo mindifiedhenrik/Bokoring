@@ -74,6 +74,15 @@ A convex-auth `Email` provider (from `@convex-dev/auth/providers/Email`):
   - Swedish subject + body containing the code.
   - Throws on a non-2xx response so sign-up surfaces a real failure rather than
     silently leaving the user unable to verify.
+- **No-key fallback (dev / tests):** when `process.env.AUTH_RESEND_KEY` is unset,
+  `sendVerificationRequest` `console.warn`s and logs the OTP to the Convex logs
+  instead of calling Resend, then returns normally. This keeps the flow
+  exercisable in local dev and convex-test without a key. It does **not** weaken
+  the security property: a session is still issued only after the OTP is entered
+  via `email-verification`, so an attacker without the victim's inbox (or, in
+  production, without log access — and production sets the key, so the OTP is
+  emailed) still cannot obtain `emailVerificationTime`. The flow fails closed: no
+  delivery means the user simply cannot verify.
 
 No new npm dependency: Resend is called via `fetch`, which is available in the
 default Convex runtime without `"use node";`.
@@ -144,6 +153,11 @@ Add a third screen state alongside `signIn` / `signUp`: `verify`.
   - links a unique user with `emailVerificationTime` set;
   - returns `null` for a unique same-email user with no `emailVerificationTime`;
   - returns `null` when the email is ambiguous (two users).
+- Update the existing `signUp` tests to pass `joinCode` (was `code`) and add an
+  assertion that, immediately after sign-up (before any OTP), the created user
+  has **no** `emailVerificationTime` — demonstrating the attacker-seeded-row
+  property the hardening defends against. These run with `AUTH_RESEND_KEY` unset,
+  so the no-key fallback applies and sign-up does not attempt a network call.
 - Keep the existing `findUserByEmail` and `organizations.join` tests.
 - The real OTP round-trip and Resend delivery cannot be exercised in
   convex-test; verify manually against a real deployment (configure env vars,
