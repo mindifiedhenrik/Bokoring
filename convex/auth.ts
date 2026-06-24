@@ -78,7 +78,9 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       const userData = {
         ...rest,
         ...(orgId ? { activeOrgId: orgId } : null),
-        // Google emails are verified; record it so future linking is automatic.
+        // Google verifies the email; record it to stay consistent with the
+        // library's verified-email model. (Our findUserByEmail links by email
+        // only, so this field is not load-bearing for linking here.)
         ...(type === "oauth" ? { emailVerificationTime: Date.now() } : null),
       };
 
