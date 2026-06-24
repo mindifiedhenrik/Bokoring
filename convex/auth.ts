@@ -83,15 +83,16 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       // email) with no pre-existing account for this provider, link to the
       // unique existing user with the same email.
       //
-      // ACCEPTED RISK: we do NOT require the existing account's email to be
-      // verified before linking. Password sign-up does not verify emails today,
-      // so requiring it would stop Google from ever linking to a password
-      // account. The exposure is bounded because password registration already
-      // requires a valid org join code. FOLLOW-UP: once the password flow
-      // verifies emails, gate this on `linked.emailVerificationTime`.
+      // The existing account's email MUST be verified before we link
+      // (findLinkableUserByEmail enforces this). The password flow now verifies
+      // emails via OTP, so an attacker who pre-registers a victim's email cannot
+      // complete verification and their seeded row has no emailVerificationTime —
+      // Google therefore creates a fresh account for the victim instead of
+      // linking into the attacker's. See
+      // docs/superpowers/specs/2026-06-24-email-verification-hardening-design.md.
       let userId: Id<"users"> | null = (existingUserId as Id<"users"> | null) ?? null;
       if (userId === null && type === "oauth" && typeof rest.email === "string") {
-        const linked = await findUserByEmail(db, rest.email);
+        const linked = await findLinkableUserByEmail(db, rest.email);
         if (linked) userId = linked._id;
       }
 
