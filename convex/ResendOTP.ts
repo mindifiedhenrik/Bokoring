@@ -15,9 +15,10 @@ export const ResendOTP = Email({
     // 8-digit numeric OTP from a CSPRNG (Web Crypto), zero-padded.
     const bytes = new Uint32Array(1);
     crypto.getRandomValues(bytes);
+    // Tiny modulo bias (~0.002%) is acceptable for a rate-limited email OTP.
     return (bytes[0] % 100_000_000).toString().padStart(8, "0");
   },
-  async sendVerificationRequest({ identifier: email, token }: { identifier: string; token: string; [key: string]: unknown }) {
+  async sendVerificationRequest({ identifier: email, token }) {
     const apiKey = process.env.AUTH_RESEND_KEY;
     const from = process.env.AUTH_EMAIL_FROM ?? "onboarding@resend.dev";
 
