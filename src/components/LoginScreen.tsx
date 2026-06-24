@@ -28,6 +28,15 @@ export default function LoginScreen() {
     }
   }
 
+  async function googleSignIn() {
+    setError(null);
+    try {
+      await signIn("google");
+    } catch {
+      setError("Kunde inte logga in med Google.");
+    }
+  }
+
   return (
     <div className="login">
       <div className="login-card">
@@ -56,6 +65,10 @@ export default function LoginScreen() {
             {busy ? "…" : flow === "signIn" ? "Logga in" : "Skapa konto"}
           </button>
         </form>
+        <div className="oauth-divider"><span>eller</span></div>
+        <button type="button" className="btn btn-google" onClick={googleSignIn} disabled={busy}>
+          Logga in med Google
+        </button>
         <div className="switch">
           {flow === "signIn" ? "Har du inget konto?" : "Har du redan ett konto?"}{" "}
           <button onClick={() => { setError(null); setFlow(flow === "signIn" ? "signUp" : "signIn"); }}>
