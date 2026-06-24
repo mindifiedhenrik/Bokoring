@@ -97,7 +97,12 @@ export default function Timeline({ milestones, linkedTasks, zoomIndex, onZoom, o
   const minHeight = LINE_Y + BASE_GAP + deepestLane * ROW_H + 64 + 180;
 
   function onPointerDown(e: React.PointerEvent, m: Milestone, lane: number) {
-    canvasRef.current?.setPointerCapture(e.pointerId);
+    // Capture on the card itself, not the canvas: per the Pointer Events spec the
+    // synthesized click is dispatched to the capture target, so capturing on the
+    // canvas made Chrome fire `click` on the canvas (never the card) and onCardClick
+    // never ran. Capturing on the card keeps move/up bubbling to the canvas handlers
+    // while routing the click back to the card so it opens.
+    e.currentTarget.setPointerCapture(e.pointerId);
     movedRef.current = false;
     setDrag({ id: m._id, startX: e.clientX, startY: e.clientY, date: m.datum, lane, previewDate: m.datum, previewLane: lane });
   }
