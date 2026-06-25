@@ -1,14 +1,12 @@
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useToast } from "../../context/ToastContext";
-
-type Board = { _id: Id<"boards">; namn: string };
 
 export default function BoardTabs({
   boards, activeId, onSelect,
 }: {
-  boards: Board[];
+  boards: Doc<"boards">[];
   activeId: Id<"boards"> | null;
   onSelect: (id: Id<"boards">) => void;
 }) {
@@ -19,14 +17,22 @@ export default function BoardTabs({
   const addBoard = async () => {
     const namn = window.prompt("Namn på tavlan?", "Ny tavla")?.trim();
     if (!namn) return;
-    const id = await create({ namn });
-    onSelect(id);
+    try {
+      const id = await create({ namn });
+      onSelect(id);
+    } catch {
+      toast("Något gick fel");
+    }
   };
 
   const deleteBoard = async (id: Id<"boards">, namn: string) => {
     if (!window.confirm(`Ta bort tavlan "${namn}" och allt innehåll?`)) return;
-    await remove({ id });
-    toast("Tavla borttagen");
+    try {
+      await remove({ id });
+      toast("Tavla borttagen");
+    } catch {
+      toast("Något gick fel");
+    }
   };
 
   return (
