@@ -15,6 +15,7 @@ Builds on the shipped team board (`2026-06-25-team-board-design.md`). Eleven enh
 9. **Placement cursor** — drawing tools show a crosshair cursor over the canvas.
 10. **Text size + bold** — per-element `fontSize` and `bold`, controlled from the toolbar.
 11. **⌘-Z undo** — client-side, own-session actions, undo-only (no redo).
+12. **Live draw preview** — while click-dragging to create a rectangle, line, or circle, show the shape forming under the cursor before release.
 
 ## Scope decisions (from brainstorming)
 
@@ -83,6 +84,7 @@ Selection moves from a single `selectedId` to **`selectedIds: Id<"boardElements"
 - **Auto-edit (#7):** `create` for `text` and `note` returns the new id; set `editingId` to it so the textarea mounts focused. The swatch-dropped note also auto-edits.
 - **Esc / Space (#8):** a window keydown handler — ignored when `document.activeElement` is a `TEXTAREA` (so Space types and the textarea keeps its own behaviour). Space → set tool to `select`. Esc → if editing, blur/commit; else clear the marquee and set tool to `select`.
 - **Placement cursor (#9):** `.board-canvas` cursor is `grab` for the select tool and `crosshair` for any drawing tool (driven by a class or inline style from `tool`).
+- **Live draw preview (#12):** while a drawing tool drag is in progress, `useCanvasInteractions` exposes a transient `draft` element `{ kind, x, y, w, h, color }` recomputed on each pointer-move from `drawStart`→current world point (line keeps the raw vector; rect/circle use `normalizeRect`). `Canvas` renders the draft with the existing `ShapeElement` inside the SVG `<g>` (so it shares pan/zoom and looks identical to the committed shape), at reduced opacity to read as in-progress. On pointer-up the real element is created and `draft` is cleared. The draft is local only — not synced — matching the commit-on-drop model (teammates see the shape when it lands). Text/note tools have no draft (they place at a fixed default size).
 - **Text size + bold (#10):** `Toolbar` gains an `A−` / `A+` pair and a `B` toggle on the left group. They set a `fontSize`/`bold` style that applies to newly created text-bearing elements and, when a selection exists, patch the selected element(s) via `update`. `NoteElement`, `TextElement`, and `ShapeFrame` render `style={{ fontSize, fontWeight: bold ? 700 : 400 }}`, falling back to per-kind defaults when the fields are absent.
 - **Undo (#11):** action handlers call `undo.record(inverse)` after each mutation:
   - create → inverse `remove(id)`.
@@ -108,13 +110,13 @@ Unit tests in `src/lib/board.test.ts`: bounds for a normal rect and a negative-v
 - `src/lib/board.ts` + `.test.ts` — `elementBounds`, `rectsIntersect`.
 - `src/lib/constants.ts` — default font sizes per kind, font-size step bounds (e.g. `BOARD_FONT_SIZES` or min/max/step).
 - `src/components/board/useCanvasInteractions.ts` (new), `useUndo.ts` (new).
-- `src/components/board/Canvas.tsx` — slimmed to rendering + hook wiring; marquee + ShapeFrame + multi-select visuals + crosshair cursor + swatch-drop entry.
+- `src/components/board/Canvas.tsx` — slimmed to rendering + hook wiring; marquee + ShapeFrame + multi-select visuals + crosshair cursor + swatch-drop entry + live draw-preview draft.
 - `src/components/board/ShapeFrame.tsx` (new), `BoardHelp.tsx` (new).
 - `src/components/board/elements/NoteElement.tsx`, `TextElement.tsx`, `ShapeElement.tsx` — font/bold styling; ShapeElement rect/circle become `pointer-events: none`.
 - `src/components/board/Toolbar.tsx` — draggable swatches, font-size +/−, bold toggle, `?` button.
 - `src/components/board/BoardView.tsx` — `selectedIds`, `helpOpen`, swatch-drag state, undo wiring, font/bold active style, clears on board switch.
 - `src/components/board/SelectionHandles.tsx` — render only when one selected (caller-gated).
-- `src/index.css` — marquee rectangle, shape-frame label, swatch ghost, crosshair cursor, font/bold toolbar controls, `?` button.
+- `src/index.css` — marquee rectangle, shape-frame label, swatch ghost, crosshair cursor, font/bold toolbar controls, `?` button, draft-shape opacity.
 
 ## Testing
 
