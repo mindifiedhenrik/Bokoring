@@ -148,6 +148,8 @@ export default defineSchema({
     h: v.number(),
     text: v.optional(v.string()),
     color: v.string(),
+    fontSize: v.optional(v.number()),
+    bold: v.optional(v.boolean()),
     order: v.number(),
   })
     .index("by_board", ["boardId"])

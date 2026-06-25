@@ -73,3 +73,29 @@ test("update refuses an element from another org", async () => {
     orgB.as.mutation(api.boardElements.update, { id, x: 1 }),
   ).rejects.toThrow();
 });
+
+test("create + update persist fontSize and bold", async () => {
+  const t = convexTest(schema, modules);
+  const { as: u } = await setupOrg(t);
+  const boardId = await u.mutation(api.boards.create, { namn: "B" });
+  const id = await u.mutation(api.boardElements.create, {
+    boardId, kind: "text", x: 0, y: 0, w: 200, h: 40, text: "Hi", color: "#1f1b16", fontSize: 24, bold: true,
+  });
+  let el = (await u.query(api.boardElements.listByBoard, { boardId }))[0];
+  expect(el).toMatchObject({ fontSize: 24, bold: true });
+  await u.mutation(api.boardElements.update, { id, fontSize: 12, bold: false });
+  el = (await u.query(api.boardElements.listByBoard, { boardId }))[0];
+  expect(el).toMatchObject({ fontSize: 12, bold: false });
+});
+
+test("a rectangle can carry a text label", async () => {
+  const t = convexTest(schema, modules);
+  const { as: u } = await setupOrg(t);
+  const boardId = await u.mutation(api.boards.create, { namn: "B" });
+  const id = await u.mutation(api.boardElements.create, {
+    boardId, kind: "rect", x: 0, y: 0, w: 100, h: 60, color: "#6b8aa8",
+  });
+  await u.mutation(api.boardElements.update, { id, text: "Label" });
+  const el = (await u.query(api.boardElements.listByBoard, { boardId }))[0];
+  expect(el.text).toBe("Label");
+});

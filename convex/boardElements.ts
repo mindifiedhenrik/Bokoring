@@ -41,6 +41,8 @@ export const create = mutation({
     h: v.number(),
     text: v.optional(v.string()),
     color: v.string(),
+    fontSize: v.optional(v.number()),
+    bold: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { orgId } = await requireOrg(ctx);
@@ -58,6 +60,8 @@ export const update = mutation({
     h: v.optional(v.number()),
     text: v.optional(v.string()),
     color: v.optional(v.string()),
+    fontSize: v.optional(v.number()),
+    bold: v.optional(v.boolean()),
   },
   handler: async (ctx, { id, ...patch }) => {
     const { orgId } = await requireOrg(ctx);
