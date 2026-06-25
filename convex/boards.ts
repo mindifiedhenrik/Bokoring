@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { requireOrg } from "./helpers";
 import { Id } from "./_generated/dataModel";
@@ -34,7 +34,7 @@ export const rename = mutation({
 });
 
 async function deleteByBoard(
-  ctx: { db: any },
+  ctx: MutationCtx,
   table: "boardElements" | "boardPresence",
   boardId: Id<"boards">,
 ) {
@@ -42,7 +42,7 @@ async function deleteByBoard(
   while (true) {
     const batch = await ctx.db
       .query(table)
-      .withIndex("by_board", (q: any) => q.eq("boardId", boardId))
+      .withIndex("by_board", (q) => q.eq("boardId", boardId))
       .take(100);
     if (batch.length === 0) break;
     for (const row of batch) await ctx.db.delete(table, row._id);
@@ -56,6 +56,9 @@ export const remove = mutation({
     const { orgId } = await requireOrg(ctx);
     const prev = await ctx.db.get("boards", id);
     if (!prev || prev.orgId !== orgId) throw new Error("Tavla saknas");
+    // Assumes a board's element/presence count stays within one mutation's write
+    // limit (Miro-style boards won't approach it). If that ever changes, switch to
+    // ctx.scheduler.runAfter(0, ...) self-rescheduling per the Convex deletion guideline.
     await deleteByBoard(ctx, "boardElements", id);
     await deleteByBoard(ctx, "boardPresence", id);
     await ctx.db.delete("boards", id);

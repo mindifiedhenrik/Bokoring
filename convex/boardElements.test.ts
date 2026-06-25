@@ -60,3 +60,16 @@ test("create refuses adding to another org's board", async () => {
     }),
   ).rejects.toThrow();
 });
+
+test("update refuses an element from another org", async () => {
+  const t = convexTest(schema, modules);
+  const orgA = await setupOrg(t, { joinCode: "ELE11111", email: "ee@firma.se" });
+  const orgB = await setupOrg(t, { joinCode: "ELF11111", email: "ef@firma.se" });
+  const boardId = await orgA.as.mutation(api.boards.create, { namn: "A" });
+  const id = await orgA.as.mutation(api.boardElements.create, {
+    boardId, kind: "rect", x: 0, y: 0, w: 10, h: 10, color: "#6b8aa8",
+  });
+  await expect(
+    orgB.as.mutation(api.boardElements.update, { id, x: 1 }),
+  ).rejects.toThrow();
+});
