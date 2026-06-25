@@ -1,69 +1,57 @@
-import { Password } from "@convex-dev/auth/providers/Password";
+import Google from "@auth/core/providers/google";
 import { convexAuth } from "@convex-dev/auth/server";
-import { ConvexError } from "convex/values";
-import { Id } from "./_generated/dataModel";
-import { DatabaseWriter } from "./_generated/server";
+import { Doc, Id } from "./_generated/dataModel";
+import { DatabaseReader, DatabaseWriter } from "./_generated/server";
+
+// Find the unique existing user with this email. Returns null when none match
+// or when the email is ambiguous (more than one user).
+export async function findUserByEmail(
+  db: DatabaseReader,
+  email: string,
+): Promise<Doc<"users"> | null> {
+  const users = await db
+    .query("users")
+    .withIndex("email", (q) => q.eq("email", email))
+    .take(2);
+  return users.length === 1 ? users[0] : null;
+}
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [
-    Password({
-      // On sign-up the `code` must match an organization's join code; the new
-      // user is enrolled into that org (membership + activeOrgId set in
-      // `createOrUpdateUser` below). Sign-in of existing accounts is unaffected
-      // (no code required).
-      //
-      // NOTE: `@convex-dev/auth` 0.0.94 calls this `profile` synchronously (it
-      // does NOT await the result), so we cannot do the async org lookup here.
-      // We only validate the code's presence and hand it to the awaited
-      // `createOrUpdateUser` callback via a transient `joinCode` field, which is
-      // stripped before the user document is written.
-      profile(params): { email: string; joinCode?: string } {
-        const email = params.email as string;
-        if (params.flow === "signUp") {
-          const code = (params.code as string | undefined)?.trim();
-          if (!code) throw new ConvexError("Organisationskod krävs");
-          return { email, joinCode: code };
-        }
-        return { email };
-      },
-    }),
-  ],
+  providers: [Google],
   callbacks: {
-    // Awaited mutation callback with `ctx.db`. Resolves the join code to an org,
-    // creates/links the user, sets the active org, and creates the membership.
-    // The callback ctx is typed against a generic data model, so we narrow `db`
-    // to this deployment's generated DatabaseWriter for index/table typing.
+    // Google is the only provider. Brand-new users arrive with no organization
+    // and are routed to JoinOrgScreen, which enrolls them via
+    // `organizations.join`. Existing accounts (including legacy password users)
+    // are linked by email so they keep their organization and data when they
+    // switch to Google.
     async createOrUpdateUser(ctx, { existingUserId, profile }) {
       const db = ctx.db as unknown as DatabaseWriter;
-      const joinCode = (profile as { joinCode?: string }).joinCode?.trim();
-      let orgId: Id<"organizations"> | undefined;
-      if (joinCode) {
-        const org = await db
-          .query("organizations")
-          .withIndex("by_joinCode", (q) => q.eq("joinCode", joinCode))
-          .first();
-        if (!org) throw new ConvexError("Ogiltig kod");
-        orgId = org._id;
+      const rest = profile as Record<string, unknown>;
+
+      // A custom createOrUpdateUser bypasses the library's built-in email
+      // linking, so link manually: when there is no existing account for this
+      // provider yet, link to the unique existing user with the same email.
+      let userId: Id<"users"> | null =
+        (existingUserId as Id<"users"> | null) ?? null;
+      if (userId === null && typeof rest.email === "string") {
+        const linked = await findUserByEmail(db, rest.email);
+        if (linked) userId = linked._id;
       }
 
-      // Never persist the transient `joinCode` onto the user document.
-      const { joinCode: _omit, ...rest } = profile as Record<string, unknown>;
-      const userData = { ...rest, ...(orgId ? { activeOrgId: orgId } : null) };
+      // Google verifies the email; record it.
+      const userData = { ...rest, emailVerificationTime: Date.now() };
 
-      let userId: Id<"users">;
-      if (existingUserId) {
-        userId = existingUserId as Id<"users">;
+      let isNew = false;
+      if (userId) {
         await db.patch(userId, userData);
       } else {
         userId = await db.insert("users", userData);
+        isNew = true;
       }
 
-      if (orgId) {
-        const existing = await db
-          .query("memberships")
-          .withIndex("by_user_org", (q) => q.eq("userId", userId).eq("orgId", orgId!))
-          .first();
-        if (!existing) await db.insert("memberships", { userId, orgId });
+      // Seed a display name from the Google profile on first creation.
+      if (isNew && typeof rest.name === "string" && rest.name.trim()) {
+        await db.insert("userProfiles", { userId, displayName: rest.name.trim() });
       }
 
       return userId;

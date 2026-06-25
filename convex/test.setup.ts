@@ -7,3 +7,5 @@ import { exportPKCS8, generateKeyPair } from "jose";
 const { privateKey } = await generateKeyPair("RS256", { extractable: true });
 process.env.JWT_PRIVATE_KEY ??= await exportPKCS8(privateKey);
 process.env.CONVEX_SITE_URL ??= "https://example.convex.site";
+// SITE_URL is the app URL `@convex-dev/auth` redirects back to after sign-in.
+process.env.SITE_URL ??= "http://localhost:5173";
