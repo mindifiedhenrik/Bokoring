@@ -40,3 +40,11 @@ test("listByBoard returns other users' fresh cursors", async () => {
   const seen = await orgA1.as.query(api.boardPresence.listByBoard, { boardId });
   expect(seen.map((c) => ({ x: c.x, y: c.y }))).toEqual([{ x: 7, y: 8 }]);
 });
+
+test("listByBoard returns [] for a board in another org (tolerant read)", async () => {
+  const t = convexTest(schema, modules);
+  const orgA = await setupOrg(t, { joinCode: "PRSA1111", email: "pa@firma.se" });
+  const orgB = await setupOrg(t, { joinCode: "PRSB1111", email: "pb@firma.se" });
+  const boardId = await orgA.as.mutation(api.boards.create, { namn: "A" });
+  expect(await orgB.as.query(api.boardPresence.listByBoard, { boardId })).toEqual([]);
+});

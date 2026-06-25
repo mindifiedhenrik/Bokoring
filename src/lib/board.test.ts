@@ -1,5 +1,13 @@
 import { expect, test } from "vitest";
-import { screenToWorld, worldToScreen, zoomAt, clampZoom, normalizeRect, elementBounds, rectsIntersect } from "./board";
+import { screenToWorld, worldToScreen, zoomAt, clampZoom, normalizeRect, elementBounds, rectsIntersect, isDarkColor } from "./board";
+
+test("isDarkColor picks dark vs light backgrounds", () => {
+  expect(isDarkColor("#1f1b16")).toBe(true); // the palette's near-black
+  expect(isDarkColor("#000000")).toBe(true);
+  expect(isDarkColor("#ffe9a8")).toBe(false); // light yellow note
+  expect(isDarkColor("#bbdefb")).toBe(false); // light blue
+  expect(isDarkColor("#ffffff")).toBe(false);
+});
 
 test("worldToScreen and screenToWorld round-trip", () => {
   const vp = { panX: 30, panY: -12, zoom: 1.5 };

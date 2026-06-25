@@ -54,3 +54,17 @@ export function elementBounds(el: BoundsInput): Rect {
 export function rectsIntersect(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
+
+// True when a hex color is dark enough that light text reads better on it. Used to flip a
+// note's text to white on dark backgrounds. Unparseable input falls back to "not dark".
+export function isDarkColor(hex: string): boolean {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  if (full.length < 6) return false;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return false;
+  // Perceived (luma) brightness, 0–1.
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
+}

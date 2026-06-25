@@ -44,7 +44,7 @@ const Canvas = forwardRef<CanvasHandle, Props>(function Canvas(
   const [editingId, setEditingId] = useState<Id<"boardElements"> | null>(null);
 
   const ix = useCanvasInteractions({
-    boardId, elements, tool, color, fontSize, bold, vp, pan,
+    boardId, elements, tool, setTool, color, fontSize, bold, vp, pan,
     selectedIds, setSelectedIds, setEditingId, containerRef: ref, record,
   });
 

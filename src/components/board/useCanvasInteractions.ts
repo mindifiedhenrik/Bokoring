@@ -16,6 +16,7 @@ export type InteractionOpts = {
   boardId: Id<"boards">;
   elements: El[];
   tool: BoardTool;
+  setTool: (t: BoardTool) => void;
   color: string;
   fontSize: number;
   bold: boolean;
@@ -30,7 +31,7 @@ export type InteractionOpts = {
 
 export function useCanvasInteractions(opts: InteractionOpts) {
   const {
-    boardId, elements, tool, color, fontSize, bold, vp, pan,
+    boardId, elements, tool, setTool, color, fontSize, bold, vp, pan,
     selectedIds, setSelectedIds, setEditingId, containerRef, record,
   } = opts;
   const create = useMutation(api.boardElements.create);
@@ -48,6 +49,16 @@ export function useCanvasInteractions(opts: InteractionOpts) {
   const marqueeStart = useRef<{ x: number; y: number } | null>(null);
   const dragRef = useRef<null | {
     mode: "move" | Corner;
+    startWorld: { x: number; y: number };
+    items: Array<{ id: Id<"boardElements">; kind: string; orig: Geo }>;
+  }>(null);
+  // A move that hasn't started dragging yet. We defer setPointerCapture until the pointer
+  // actually moves: capturing on pointer-down makes Chrome retarget the click/dblclick to
+  // the capture element, which swallows double-click-to-edit on a card (works in Safari,
+  // breaks in Chrome). No movement => no capture => the card receives its dblclick.
+  const pendingMove = useRef<null | {
+    pointerId: number;
+    startClient: { x: number; y: number };
     startWorld: { x: number; y: number };
     items: Array<{ id: Id<"boardElements">; kind: string; orig: Geo }>;
   }>(null);
@@ -72,15 +83,20 @@ export function useCanvasInteractions(opts: InteractionOpts) {
       );
       return;
     }
-    containerRef.current!.setPointerCapture(e.pointerId);
+    // Select now for immediate feedback, but defer capture + drag until the pointer moves
+    // (see pendingMove). A bare click/double-click must reach the card so editing can open.
     const moveIds = selectedIds.includes(el._id) && selectedIds.length > 0 ? selectedIds : [el._id];
     if (!selectedIds.includes(el._id)) setSelectedIds([el._id]);
     const items = moveIds
       .map((id) => elements.find((x) => x._id === id))
       .filter((m): m is El => !!m)
       .map((m) => ({ id: m._id, kind: m.kind, orig: { x: m.x, y: m.y, w: m.w, h: m.h } }));
-    dragRef.current = { mode: "move", startWorld: toWorld(screenInCanvas(e)), items };
-    setLive(Object.fromEntries(items.map((it) => [it.id, it.orig])));
+    pendingMove.current = {
+      pointerId: e.pointerId,
+      startClient: { x: e.clientX, y: e.clientY },
+      startWorld: toWorld(screenInCanvas(e)),
+      items,
+    };
   };
 
   const startResize = (el: El, corner: Corner, e: React.PointerEvent) => {
@@ -113,6 +129,15 @@ export function useCanvasInteractions(opts: InteractionOpts) {
 
   const onPointerMove = (e: React.PointerEvent) => {
     const sp = screenInCanvas(e);
+    // Promote a pending move into a real drag once the pointer travels past the threshold.
+    if (pendingMove.current && !dragRef.current) {
+      const p = pendingMove.current;
+      if (Math.hypot(e.clientX - p.startClient.x, e.clientY - p.startClient.y) <= BOARD_DRAG_THRESHOLD) return;
+      containerRef.current!.setPointerCapture(p.pointerId);
+      dragRef.current = { mode: "move", startWorld: p.startWorld, items: p.items };
+      setLive(Object.fromEntries(p.items.map((it) => [it.id, it.orig])));
+      pendingMove.current = null;
+    }
     if (dragRef.current) {
       const w = toWorld(sp); const d = dragRef.current;
       const dx = w.x - d.startWorld.x; const dy = w.y - d.startWorld.y;
@@ -147,6 +172,9 @@ export function useCanvasInteractions(opts: InteractionOpts) {
   };
 
   const onPointerUp = async (e: React.PointerEvent) => {
+    // 0. a pending move that never crossed the drag threshold = a click; clear it and let
+    //    the browser's click/dblclick fire on the card (so double-click-to-edit works).
+    if (pendingMove.current && !dragRef.current) { pendingMove.current = null; return; }
     // 1. commit a move/resize
     if (dragRef.current) {
       const d = dragRef.current; dragRef.current = null;
@@ -199,7 +227,14 @@ export function useCanvasInteractions(opts: InteractionOpts) {
       if (r.w < 4 && r.h < 4) r = { x: s.x, y: s.y, w: 120, h: 90 };
       newId = await create({ boardId, kind: tool, x: r.x, y: r.y, w: r.w, h: r.h, color, fontSize, bold });
     }
-    if (newId) { const id = newId; record(() => { void removeEl({ id }); }); setSelectedIds([newId]); }
+    if (newId) {
+      const id = newId;
+      record(() => { void removeEl({ id }); });
+      setSelectedIds([newId]);
+      // Revert to the select tool after placing, so the next click selects/closes/reopens
+      // rather than creating another element (a sticky drawing tool makes close+reopen fail).
+      setTool("select");
+    }
   };
 
   // --- swatch drop: create a note of `dropColor` at a screen point ---

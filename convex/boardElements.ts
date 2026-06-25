@@ -22,7 +22,11 @@ export const listByBoard = query({
   args: { boardId: v.id("boards") },
   handler: async (ctx, { boardId }) => {
     const { orgId } = await requireOrg(ctx);
-    await requireBoard(ctx, orgId, boardId);
+    // Tolerant read: a missing/foreign board returns [] instead of throwing. The client
+    // briefly holds a stale boardId while switching org, and a throw here crashes the
+    // board view. [] is indistinguishable from an own empty board, so nothing leaks.
+    const board = await ctx.db.get("boards", boardId);
+    if (!board || board.orgId !== orgId) return [];
     const rows = await ctx.db
       .query("boardElements")
       .withIndex("by_board", (q) => q.eq("boardId", boardId))

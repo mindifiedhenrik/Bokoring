@@ -803,6 +803,7 @@
 .board-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 .board-tab-del { border: none; background: transparent; color: inherit; font-size: 16px; line-height: 1; cursor: pointer; padding: 0 2px; }
 .board-tab-add { padding: 5px 12px; border-radius: var(--radius-sm); border: 1px dashed var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; font-size: 13px; }
+.board-tab-rename { font: inherit; color: inherit; background: rgba(255,255,255,.18); border: none; border-radius: 4px; padding: 0 4px; margin: -2px 0; width: 9ch; min-width: 60px; outline: none; }
 .board-toolbar { display: flex; align-items: center; gap: 16px; padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--card); }
 .board-tools, .board-colors { display: flex; gap: 6px; }
 .board-tool { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; }
@@ -813,6 +814,11 @@
 .board-canvas { position: relative; flex: 1; min-height: 0; overflow: hidden; background:
     radial-gradient(circle, var(--line) 1px, transparent 1px) 0 0 / 24px 24px,
     var(--paper); touch-action: none; cursor: grab; }
+/* Stop dragging on the canvas from selecting card text. Scoped to the display text only
+   (not the card containers or textareas) so double-click-to-edit is unaffected. */
+.board-note-text, .board-text-content, .board-shape-text {
+  user-select: none; -webkit-user-select: none;
+}
 .board-svg { position: absolute; inset: 0; }
 .board-html-layer { position: absolute; inset: 0; pointer-events: none; }
 .board-html-layer > * { pointer-events: auto; position: absolute; }
@@ -843,5 +849,6 @@
 .board-help-list { display: flex; flex-direction: column; }
 .board-help-row { display: grid; grid-template-columns: 160px 1fr; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
 .board-help-row:last-child { border-bottom: none; }
+.board-confirm-text { margin: 0; color: var(--ink-soft); line-height: 1.6; font-size: 14px; }
 .board-help-row dt { font-weight: 600; color: var(--ink); font-size: 13.5px; }
 .board-help-row dd { margin: 0; color: var(--ink-soft); font-size: 13.5px; line-height: 1.55; }

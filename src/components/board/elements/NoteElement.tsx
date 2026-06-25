@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Doc } from "../../../../convex/_generated/dataModel";
 import { BOARD_FONT_DEFAULT } from "../../../lib/constants";
+import { isDarkColor } from "../../../lib/board";
 
 export default function NoteElement({
   el, selected, editing, onCommitText, onStartEdit, onPointerDown,
@@ -21,6 +22,7 @@ export default function NoteElement({
       className={"board-note" + (selected ? " selected" : "")}
       style={{
         left: el.x, top: el.y, width: el.w, height: el.h, background: el.color,
+        color: isDarkColor(el.color) ? "#fff" : "var(--ink)",
         fontSize: el.fontSize ?? BOARD_FONT_DEFAULT.note,
         fontWeight: el.bold ? 700 : 400,
       }}
