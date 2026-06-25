@@ -24,3 +24,5 @@ npm-debug.log*
 .claude/
 .agents/
 skills-lock.json
+
+.superpowers/
