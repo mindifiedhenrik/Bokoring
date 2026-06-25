@@ -32,7 +32,8 @@ export default function LoginScreen() {
     setError(null);
     try {
       await signIn("google");
-    } catch {
+    } catch (e) {
+      console.error("Google sign-in failed:", e);
       setError("Kunde inte logga in med Google.");
     }
   }
