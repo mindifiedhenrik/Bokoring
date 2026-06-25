@@ -812,7 +812,10 @@
 .board-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); }
 .board-canvas { position: relative; flex: 1; min-height: 0; overflow: hidden; background:
     radial-gradient(circle, var(--line) 1px, transparent 1px) 0 0 / 24px 24px,
-    var(--paper); touch-action: none; cursor: grab; }
+    var(--paper); touch-action: none; cursor: grab;
+    user-select: none; -webkit-user-select: none; }
+/* Re-enable selection only inside the editing textareas. */
+.board-canvas textarea { user-select: text; -webkit-user-select: text; }
 .board-svg { position: absolute; inset: 0; }
 .board-html-layer { position: absolute; inset: 0; pointer-events: none; }
 .board-html-layer > * { pointer-events: auto; position: absolute; }
