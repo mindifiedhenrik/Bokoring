@@ -45,6 +45,7 @@ export default function Canvas({
 
   const startMove = (el: El, e: React.PointerEvent) => {
     if (tool !== "select") return;
+    if ((e.target as HTMLElement).tagName === "TEXTAREA") return;
     e.stopPropagation();
     (ref.current as HTMLElement).setPointerCapture(e.pointerId);
     onSelect(el._id);
@@ -118,7 +119,11 @@ export default function Canvas({
       let geo = drag.live;
       // Keep box shapes/notes positive; lines may stay as a vector.
       if (el && el.kind !== "line") geo = normalizeRect(geo);
-      await update({ id: drag.id, x: geo.x, y: geo.y, w: geo.w, h: geo.h });
+      try {
+        await update({ id: drag.id, x: geo.x, y: geo.y, w: geo.w, h: geo.h });
+      } catch {
+        /* element gone; ignore */
+      }
       setDrag(null);
       return;
     }
