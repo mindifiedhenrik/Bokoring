@@ -16,6 +16,7 @@ export type InteractionOpts = {
   boardId: Id<"boards">;
   elements: El[];
   tool: BoardTool;
+  setTool: (t: BoardTool) => void;
   color: string;
   fontSize: number;
   bold: boolean;
@@ -30,7 +31,7 @@ export type InteractionOpts = {
 
 export function useCanvasInteractions(opts: InteractionOpts) {
   const {
-    boardId, elements, tool, color, fontSize, bold, vp, pan,
+    boardId, elements, tool, setTool, color, fontSize, bold, vp, pan,
     selectedIds, setSelectedIds, setEditingId, containerRef, record,
   } = opts;
   const create = useMutation(api.boardElements.create);
@@ -226,7 +227,14 @@ export function useCanvasInteractions(opts: InteractionOpts) {
       if (r.w < 4 && r.h < 4) r = { x: s.x, y: s.y, w: 120, h: 90 };
       newId = await create({ boardId, kind: tool, x: r.x, y: r.y, w: r.w, h: r.h, color, fontSize, bold });
     }
-    if (newId) { const id = newId; record(() => { void removeEl({ id }); }); setSelectedIds([newId]); }
+    if (newId) {
+      const id = newId;
+      record(() => { void removeEl({ id }); });
+      setSelectedIds([newId]);
+      // Revert to the select tool after placing, so the next click selects/closes/reopens
+      // rather than creating another element (a sticky drawing tool makes close+reopen fail).
+      setTool("select");
+    }
   };
 
   // --- swatch drop: create a note of `dropColor` at a screen point ---
