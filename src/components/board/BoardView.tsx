@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { BOARD_COLORS, type BoardTool } from "../../lib/constants";
@@ -12,7 +12,9 @@ export default function BoardView() {
   const [activeId, setActiveId] = useState<Id<"boards"> | null>(null);
   const [tool, setTool] = useState<BoardTool>("select");
   const [color, setColor] = useState<string>(BOARD_COLORS[0]);
+  const [selectedId, setSelectedId] = useState<Id<"boardElements"> | null>(null);
   const elements = useQuery(api.boardElements.listByBoard, activeId ? { boardId: activeId } : "skip") ?? [];
+  const updateEl = useMutation(api.boardElements.update);
 
   // Default to the first board once boards load / after deletion.
   useEffect(() => {
@@ -22,14 +24,22 @@ export default function BoardView() {
     }
   }, [boards, activeId]);
 
+  // Clear selection when the active board changes.
+  useEffect(() => { setSelectedId(null); }, [activeId]);
+
+  const handleColor = (c: string) => {
+    setColor(c);
+    if (selectedId) updateEl({ id: selectedId, color: c });
+  };
+
   return (
     <div className="board-view">
       <BoardTabs boards={boards} activeId={activeId} onSelect={setActiveId} />
-      <Toolbar tool={tool} color={color} onTool={setTool} onColor={setColor} />
+      <Toolbar tool={tool} color={color} onTool={setTool} onColor={handleColor} />
       {activeId === null ? (
         <div className="board-empty">Ingen tavla ännu. Skapa en med "+ Ny tavla".</div>
       ) : (
-        <Canvas boardId={activeId} elements={elements} tool={tool} color={color} />
+        <Canvas boardId={activeId} elements={elements} tool={tool} color={color} selectedId={selectedId} onSelect={setSelectedId} />
       )}
     </div>
   );
