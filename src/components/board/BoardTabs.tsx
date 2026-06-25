@@ -17,6 +17,7 @@ export default function BoardTabs({
   const toast = useToast();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<{ id: Id<"boards">; namn: string } | null>(null);
 
   const submitCreate = async () => {
     const namn = name.trim();
@@ -31,14 +32,15 @@ export default function BoardTabs({
     }
   };
 
-  const deleteBoard = async (id: Id<"boards">, namn: string) => {
-    if (!window.confirm(`Ta bort tavlan "${namn}" och allt innehåll?`)) return;
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
     try {
-      await remove({ id });
+      await remove({ id: pendingDelete.id });
       toast("Tavla borttagen");
     } catch {
       toast("Något gick fel");
     }
+    setPendingDelete(null);
   };
 
   return (
@@ -54,7 +56,7 @@ export default function BoardTabs({
             <button
               className="board-tab-del"
               title="Ta bort tavla"
-              onClick={(e) => { e.stopPropagation(); deleteBoard(b._id, b.namn); }}
+              onClick={(e) => { e.stopPropagation(); setPendingDelete({ id: b._id, namn: b.namn }); }}
             >×</button>
           )}
         </div>
@@ -88,6 +90,29 @@ export default function BoardTabs({
             <span className="spacer" />
             <button className="btn btn-ghost" onClick={() => setCreating(false)}>Avbryt</button>
             <button className="btn btn-primary" onClick={submitCreate} disabled={!name.trim()}>Skapa tavla</button>
+          </div>
+        </Modal>
+      )}
+
+      {pendingDelete && (
+        <Modal onClose={() => setPendingDelete(null)}>
+          <div className="modal-head">
+            <h2>Ta bort tavla</h2>
+            <button className="x" onClick={() => setPendingDelete(null)} aria-label="Stäng">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="modal-body">
+            <p className="board-confirm-text">
+              Vill du ta bort tavlan <b>{pendingDelete.namn}</b>? Allt innehåll på tavlan tas bort permanent.
+            </p>
+          </div>
+          <div className="modal-foot">
+            <span className="spacer" />
+            <button className="btn btn-ghost" onClick={() => setPendingDelete(null)}>Avbryt</button>
+            <button className="btn btn-danger" onClick={confirmDelete}>Ta bort</button>
           </div>
         </Modal>
       )}

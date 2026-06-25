@@ -812,10 +812,12 @@
 .board-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); }
 .board-canvas { position: relative; flex: 1; min-height: 0; overflow: hidden; background:
     radial-gradient(circle, var(--line) 1px, transparent 1px) 0 0 / 24px 24px,
-    var(--paper); touch-action: none; cursor: grab;
-    user-select: none; -webkit-user-select: none; }
-/* Re-enable selection only inside the editing textareas. */
-.board-canvas textarea { user-select: text; -webkit-user-select: text; }
+    var(--paper); touch-action: none; cursor: grab; }
+/* Stop dragging on the canvas from selecting card text. Scoped to the display text only
+   (not the card containers or textareas) so double-click-to-edit is unaffected. */
+.board-note-text, .board-text-content, .board-shape-text {
+  user-select: none; -webkit-user-select: none;
+}
 .board-svg { position: absolute; inset: 0; }
 .board-html-layer { position: absolute; inset: 0; pointer-events: none; }
 .board-html-layer > * { pointer-events: auto; position: absolute; }
@@ -846,5 +848,6 @@
 .board-help-list { display: flex; flex-direction: column; }
 .board-help-row { display: grid; grid-template-columns: 160px 1fr; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
 .board-help-row:last-child { border-bottom: none; }
+.board-confirm-text { margin: 0; color: var(--ink-soft); line-height: 1.6; font-size: 14px; }
 .board-help-row dt { font-weight: 600; color: var(--ink); font-size: 13.5px; }
 .board-help-row dd { margin: 0; color: var(--ink-soft); font-size: 13.5px; line-height: 1.55; }

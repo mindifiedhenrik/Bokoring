@@ -27,8 +27,10 @@ export const listByBoard = query({
   args: { boardId: v.id("boards") },
   handler: async (ctx, { boardId }) => {
     const { orgId, userId } = await requireOrg(ctx);
+    // Tolerant read (see boardElements.listByBoard): a stale/foreign board returns []
+    // instead of throwing, so switching org doesn't crash the board view.
     const board = await ctx.db.get("boards", boardId);
-    if (!board || board.orgId !== orgId) throw new Error("Tavla saknas");
+    if (!board || board.orgId !== orgId) return [];
     const cutoff = Date.now() - STALE_MS;
     // One row per active user — bounded by org membership, so collect() is safe here.
     const rows = await ctx.db

@@ -39,14 +39,18 @@ test("remove deletes the element", async () => {
   expect(await u.query(api.boardElements.listByBoard, { boardId })).toHaveLength(0);
 });
 
-test("listByBoard refuses a board from another org", async () => {
+test("listByBoard returns [] for a board in another org (tolerant read, no leak)", async () => {
+  // A read query must not throw on a board the caller can't see: during an org switch
+  // the client briefly holds a stale boardId, and a throw there crashes the board view.
+  // Returning [] is safe — indistinguishable from an own empty board, so no data leaks.
   const t = convexTest(schema, modules);
   const orgA = await setupOrg(t, { joinCode: "ELA11111", email: "ea@firma.se" });
   const orgB = await setupOrg(t, { joinCode: "ELB11111", email: "eb@firma.se" });
   const boardId = await orgA.as.mutation(api.boards.create, { namn: "A" });
-  await expect(
-    orgB.as.query(api.boardElements.listByBoard, { boardId }),
-  ).rejects.toThrow();
+  await orgA.as.mutation(api.boardElements.create, {
+    boardId, kind: "rect", x: 0, y: 0, w: 10, h: 10, color: "#6b8aa8",
+  });
+  expect(await orgB.as.query(api.boardElements.listByBoard, { boardId })).toEqual([]);
 });
 
 test("create refuses adding to another org's board", async () => {
