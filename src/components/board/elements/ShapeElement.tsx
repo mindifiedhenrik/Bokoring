@@ -9,7 +9,7 @@ export default function ShapeElement({ el, selected }: { el: Doc<"boardElements"
     return <line x1={el.x} y1={el.y} x2={el.x + el.w} y2={el.y + el.h} stroke={stroke} strokeWidth={sw} strokeLinecap="round" />;
   }
   if (el.kind === "rect") {
-    return <rect x={el.x} y={el.y} width={Math.max(1, el.w)} height={Math.max(1, el.h)} fill="none" stroke={stroke} strokeWidth={sw} rx={4} />;
+    return <rect x={el.x} y={el.y} width={Math.max(1, el.w)} height={Math.max(1, el.h)} fill="none" stroke={stroke} strokeWidth={sw} rx={4} style={{ pointerEvents: "none" }} />;
   }
   // circle: bounding box (x,y,w,h) -> ellipse
   return (
@@ -19,6 +19,7 @@ export default function ShapeElement({ el, selected }: { el: Doc<"boardElements"
       rx={Math.max(1, Math.abs(el.w / 2))}
       ry={Math.max(1, Math.abs(el.h / 2))}
       fill="none" stroke={stroke} strokeWidth={sw}
+      style={{ pointerEvents: "none" }}
     />
   );
 }

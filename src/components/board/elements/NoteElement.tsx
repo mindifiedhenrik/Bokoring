@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Doc } from "../../../../convex/_generated/dataModel";
+import { BOARD_FONT_DEFAULT } from "../../../lib/constants";
 
 export default function NoteElement({
   el, selected, editing, onCommitText, onStartEdit, onPointerDown,
@@ -18,7 +19,11 @@ export default function NoteElement({
   return (
     <div
       className={"board-note" + (selected ? " selected" : "")}
-      style={{ left: el.x, top: el.y, width: el.w, height: el.h, background: el.color }}
+      style={{
+        left: el.x, top: el.y, width: el.w, height: el.h, background: el.color,
+        fontSize: el.fontSize ?? BOARD_FONT_DEFAULT.note,
+        fontWeight: el.bold ? 700 : 400,
+      }}
       onDoubleClick={onStartEdit}
       onPointerDown={onPointerDown}
       data-element-id={el._id}
