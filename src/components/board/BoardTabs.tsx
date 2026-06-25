@@ -14,10 +14,12 @@ export default function BoardTabs({
 }) {
   const create = useMutation(api.boards.create);
   const remove = useMutation(api.boards.remove);
+  const rename = useMutation(api.boards.rename);
   const toast = useToast();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [pendingDelete, setPendingDelete] = useState<{ id: Id<"boards">; namn: string } | null>(null);
+  const [renaming, setRenaming] = useState<{ id: Id<"boards">; value: string } | null>(null);
 
   const submitCreate = async () => {
     const namn = name.trim();
@@ -27,6 +29,19 @@ export default function BoardTabs({
       onSelect(id);
       setCreating(false);
       setName("");
+    } catch {
+      toast("Något gick fel");
+    }
+  };
+
+  const commitRename = async () => {
+    if (!renaming) return;
+    const namn = renaming.value.trim();
+    const current = boards.find((b) => b._id === renaming.id);
+    setRenaming(null);
+    if (!namn || !current || namn === current.namn) return; // empty or unchanged → cancel
+    try {
+      await rename({ id: renaming.id, namn });
     } catch {
       toast("Något gick fel");
     }
@@ -50,9 +65,25 @@ export default function BoardTabs({
           key={b._id}
           className={"board-tab" + (b._id === activeId ? " active" : "")}
           onClick={() => onSelect(b._id)}
+          onDoubleClick={() => setRenaming({ id: b._id, value: b.namn })}
         >
-          <span>{b.namn}</span>
-          {b._id === activeId && (
+          {renaming?.id === b._id ? (
+            <input
+              className="board-tab-rename"
+              autoFocus
+              value={renaming.value}
+              onChange={(e) => setRenaming({ id: b._id, value: e.target.value })}
+              onClick={(e) => e.stopPropagation()}
+              onBlur={commitRename}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitRename();
+                else if (e.key === "Escape") setRenaming(null);
+              }}
+            />
+          ) : (
+            <span title="Dubbelklicka för att byta namn">{b.namn}</span>
+          )}
+          {b._id === activeId && renaming?.id !== b._id && (
             <button
               className="board-tab-del"
               title="Ta bort tavla"
