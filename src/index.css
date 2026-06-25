@@ -788,21 +788,6 @@
   .ms-task-x:hover { color: var(--accent); }
   .ms-task-add { margin-top: 12px; width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); color: var(--ink); font: inherit; cursor: pointer; }
 
-.oauth-divider {
-  display: flex;
-  align-items: center;
-  text-align: center;
-  color: var(--muted, #888);
-  font-size: 13px;
-  margin: 14px 0;
-}
-.oauth-divider::before,
-.oauth-divider::after {
-  content: "";
-  flex: 1;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-}
-.oauth-divider span { padding: 0 10px; }
 .btn-google {
   width: 100%;
   background: #fff;
