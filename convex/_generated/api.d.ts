@@ -9,6 +9,9 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as boardElements from "../boardElements.js";
+import type * as boardPresence from "../boardPresence.js";
+import type * as boards from "../boards.js";
 import type * as contacts from "../contacts.js";
 import type * as crons from "../crons.js";
 import type * as helpers from "../helpers.js";
@@ -33,6 +36,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  boardElements: typeof boardElements;
+  boardPresence: typeof boardPresence;
+  boards: typeof boards;
   contacts: typeof contacts;
   crons: typeof crons;
   helpers: typeof helpers;

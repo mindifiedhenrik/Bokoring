@@ -127,4 +127,41 @@ export default defineSchema({
     archiveDays: v.number(),
     pileThreshold: v.number(),
   }).index("by_org", ["orgId"]),
+  boards: defineTable({
+    orgId: v.id("organizations"),
+    namn: v.string(),
+    order: v.number(),
+  }).index("by_org", ["orgId"]),
+  boardElements: defineTable({
+    orgId: v.id("organizations"),
+    boardId: v.id("boards"),
+    kind: v.union(
+      v.literal("note"),
+      v.literal("text"),
+      v.literal("line"),
+      v.literal("rect"),
+      v.literal("circle"),
+    ),
+    x: v.number(),
+    y: v.number(),
+    w: v.number(),
+    h: v.number(),
+    text: v.optional(v.string()),
+    color: v.string(),
+    fontSize: v.optional(v.number()),
+    bold: v.optional(v.boolean()),
+    order: v.number(),
+  })
+    .index("by_board", ["boardId"])
+    .index("by_org", ["orgId"]),
+  boardPresence: defineTable({
+    orgId: v.id("organizations"),
+    boardId: v.id("boards"),
+    userId: v.id("users"),
+    x: v.number(),
+    y: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_board", ["boardId"])
+    .index("by_user_board", ["userId", "boardId"]),
 });

@@ -12,8 +12,9 @@ import PipelineView from "./components/kanban/PipelineView";
 import ContactsView from "./components/contacts/ContactsView";
 import TasksView from "./components/tasks/TasksView";
 import RoadmapView from "./components/roadmap/RoadmapView";
+import BoardView from "./components/board/BoardView";
 
-type View = "kanban" | "contacts" | "tasks" | "roadmap";
+type View = "kanban" | "contacts" | "tasks" | "roadmap" | "board";
 
 function Workspace() {
   const [view, setView] = useState<View>("kanban");
@@ -26,6 +27,7 @@ function Workspace() {
         {view === "contacts" && <ContactsView />}
         {view === "tasks" && <TasksView />}
         {view === "roadmap" && <RoadmapView />}
+        {view === "board" && <BoardView />}
       </main>
       <ModalHost />
     </div>
