@@ -51,6 +51,28 @@ test("join rejects an unknown code", async () => {
   await expect(as.mutation(api.organizations.join, { code: "BADCODE0" })).rejects.toThrow("Ogiltig kod");
 });
 
+test("join is idempotent and does not create duplicate memberships", async () => {
+  const t = convexTest(schema, modules);
+  const { orgId, userId } = await t.run(async (ctx) => {
+    const orgId = await ctx.db.insert("organizations", { namn: "Acme", joinCode: "JOINME02" });
+    const userId = await ctx.db.insert("users", { email: "g@firma.se" });
+    return { orgId, userId };
+  });
+  const as = t.withIdentity({ subject: `${userId}|s` });
+
+  await as.mutation(api.organizations.join, { code: "JOINME02" });
+  await as.mutation(api.organizations.join, { code: "JOINME02" });
+
+  const count = await t.run(async (ctx) => {
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org", (q) => q.eq("userId", userId).eq("orgId", orgId))
+      .collect();
+    return memberships.length;
+  });
+  expect(count).toBe(1);
+});
+
 test("setActive rejects an org the user is not a member of", async () => {
   const t = convexTest(schema, modules);
   const otherOrg = await t.run((ctx) => ctx.db.insert("organizations", { namn: "Other", joinCode: "OTHER111" }));
