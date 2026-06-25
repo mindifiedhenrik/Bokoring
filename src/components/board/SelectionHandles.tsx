@@ -26,7 +26,7 @@ export default function SelectionHandles({
           key={c.id}
           x={c.cx - 5} y={c.cy - 5} width={10} height={10}
           fill="#fffdf8" stroke="#c45b32" strokeWidth={1}
-          style={{ cursor: "nwse-resize" }}
+          style={{ cursor: c.id === "nw" || c.id === "se" ? "nwse-resize" : "nesw-resize" }}
           onPointerDown={(e) => { e.stopPropagation(); onResizeStart(c.id, e); }}
         />
       ))}
