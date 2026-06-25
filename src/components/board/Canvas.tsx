@@ -44,7 +44,7 @@ const Canvas = forwardRef<CanvasHandle, Props>(function Canvas(
   const [editingId, setEditingId] = useState<Id<"boardElements"> | null>(null);
 
   const ix = useCanvasInteractions({
-    boardId, elements, tool, setTool, color, fontSize, bold, vp, pan,
+    boardId, elements, tool, color, fontSize, bold, vp, pan,
     selectedIds, setSelectedIds, setEditingId, containerRef: ref, record,
   });
 
@@ -93,9 +93,12 @@ const Canvas = forwardRef<CanvasHandle, Props>(function Canvas(
         for (const el of saved) removeEl({ id: el._id });
         record(async () => {
           for (const el of saved) {
+            // Recreated elements get a NEW id, so undo entries recorded before a delete that
+            // reference the old id become no-ops (acceptable for v1 undo).
             await create({
               boardId, kind: el.kind, x: el.x, y: el.y, w: el.w, h: el.h,
               text: el.text, color: el.color, fontSize: el.fontSize, bold: el.bold,
+              order: el.order,
             });
           }
         });

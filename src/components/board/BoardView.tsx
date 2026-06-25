@@ -2,15 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { BOARD_COLORS, BOARD_FONT_DEFAULT, BOARD_FONT_MIN, BOARD_FONT_MAX, BOARD_FONT_STEP, type BoardTool } from "../../lib/constants";
+import { BOARD_COLORS, BOARD_DRAG_THRESHOLD, BOARD_FONT_DEFAULT, BOARD_FONT_MIN, BOARD_FONT_MAX, BOARD_FONT_STEP, type BoardTool } from "../../lib/constants";
 import Modal from "../ui/Modal";
 import BoardTabs from "./BoardTabs";
 import Toolbar from "./Toolbar";
 import BoardHelp from "./BoardHelp";
 import Canvas, { type CanvasHandle } from "./Canvas";
 import { useUndo } from "./useUndo";
-
-const THRESH = 4;
 
 export default function BoardView() {
   const boards = useQuery(api.boards.list) ?? [];
@@ -64,7 +62,7 @@ export default function BoardView() {
   useEffect(() => {
     const move = (e: PointerEvent) => {
       const s = swatch.current; if (!s) return;
-      if (!s.dragging && Math.hypot(e.clientX - s.startX, e.clientY - s.startY) > THRESH) s.dragging = true;
+      if (!s.dragging && Math.hypot(e.clientX - s.startX, e.clientY - s.startY) > BOARD_DRAG_THRESHOLD) s.dragging = true;
       if (s.dragging) setGhost({ x: e.clientX, y: e.clientY, color: s.color });
     };
     const up = (e: PointerEvent) => {

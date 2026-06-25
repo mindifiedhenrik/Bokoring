@@ -3,12 +3,11 @@ import { useMutation } from "convex/react";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { normalizeRect, elementBounds, rectsIntersect, screenToWorld, type Viewport } from "../../lib/board";
-import type { BoardTool } from "../../lib/constants";
+import { BOARD_DRAG_THRESHOLD, type BoardTool } from "../../lib/constants";
 
 type El = Doc<"boardElements">;
 type Geo = { x: number; y: number; w: number; h: number };
 type Corner = "nw" | "ne" | "sw" | "se";
-const THRESH = 4;
 
 export type Draft = { kind: "line" | "rect" | "circle"; x: number; y: number; w: number; h: number; color: string } | null;
 export type Marquee = { x: number; y: number; w: number; h: number } | null; // screen-space
@@ -17,7 +16,6 @@ export type InteractionOpts = {
   boardId: Id<"boards">;
   elements: El[];
   tool: BoardTool;
-  setTool: (t: BoardTool) => void;
   color: string;
   fontSize: number;
   bold: boolean;
@@ -171,7 +169,7 @@ export function useCanvasInteractions(opts: InteractionOpts) {
     if (marqueeStart.current) {
       marqueeStart.current = null;
       const m = marquee; setMarquee(null);
-      if (m && (m.w > THRESH || m.h > THRESH)) {
+      if (m && (m.w > BOARD_DRAG_THRESHOLD || m.h > BOARD_DRAG_THRESHOLD)) {
         const tl = toWorld({ x: m.x, y: m.y });
         const br = toWorld({ x: m.x + m.w, y: m.y + m.h });
         const worldRect = { x: tl.x, y: tl.y, w: br.x - tl.x, h: br.y - tl.y };

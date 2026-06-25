@@ -43,11 +43,12 @@ export const create = mutation({
     color: v.string(),
     fontSize: v.optional(v.number()),
     bold: v.optional(v.boolean()),
+    order: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { orgId } = await requireOrg(ctx);
     await requireBoard(ctx, orgId, args.boardId);
-    return await ctx.db.insert("boardElements", { ...args, orgId, order: Date.now() });
+    return await ctx.db.insert("boardElements", { ...args, orgId, order: args.order ?? Date.now() });
   },
 });
 
