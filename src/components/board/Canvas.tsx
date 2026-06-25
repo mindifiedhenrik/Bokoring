@@ -1,5 +1,9 @@
 import { useRef } from "react";
-import type { Doc } from "../../../convex/_generated/dataModel";
+import { useMutation } from "convex/react";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
+import { normalizeRect } from "../../lib/board";
+import type { BoardTool } from "../../lib/constants";
 import { useViewport } from "./useViewport";
 import ShapeElement from "./elements/ShapeElement";
 import NoteElement from "./elements/NoteElement";
@@ -7,25 +11,64 @@ import TextElement from "./elements/TextElement";
 
 type El = Doc<"boardElements">;
 
-export default function Canvas({ elements }: { elements: El[] }) {
-  const { vp, pan, zoom } = useViewport();
+export default function Canvas({
+  boardId, elements, tool, color,
+}: {
+  boardId: Id<"boards">;
+  elements: El[];
+  tool: BoardTool;
+  color: string;
+}) {
+  const { vp, pan, zoom, toWorld } = useViewport();
+  const create = useMutation(api.boardElements.create);
   const ref = useRef<HTMLDivElement>(null);
-  const dragging = useRef<{ x: number; y: number } | null>(null);
+  const panState = useRef<{ x: number; y: number } | null>(null);
+  const drawStart = useRef<{ x: number; y: number } | null>(null);
+
+  const screenInCanvas = (e: React.PointerEvent) => {
+    const rect = ref.current!.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    // Pan only when the empty canvas is the target.
-    if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains("board-svg")) {
-      dragging.current = { x: e.clientX, y: e.clientY };
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    const onEmpty = e.target === e.currentTarget || (e.target as HTMLElement).classList.contains("board-svg");
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    if (tool === "select") {
+      if (onEmpty) panState.current = { x: e.clientX, y: e.clientY };
+      return;
     }
+    // Drawing tools start from the world point under the cursor.
+    const w = toWorld(screenInCanvas(e));
+    drawStart.current = w;
   };
+
   const onPointerMove = (e: React.PointerEvent) => {
-    if (dragging.current) {
-      pan(e.clientX - dragging.current.x, e.clientY - dragging.current.y);
-      dragging.current = { x: e.clientX, y: e.clientY };
+    if (panState.current) {
+      pan(e.clientX - panState.current.x, e.clientY - panState.current.y);
+      panState.current = { x: e.clientX, y: e.clientY };
     }
   };
-  const onPointerUp = () => { dragging.current = null; };
+
+  const onPointerUp = async (e: React.PointerEvent) => {
+    panState.current = null;
+    const start = drawStart.current;
+    drawStart.current = null;
+    if (tool === "select" || !start) return;
+    const end = toWorld(screenInCanvas(e));
+
+    if (tool === "note") {
+      await create({ boardId, kind: "note", x: start.x, y: start.y, w: 160, h: 120, text: "", color });
+    } else if (tool === "text") {
+      await create({ boardId, kind: "text", x: start.x, y: start.y, w: 200, h: 40, text: "", color });
+    } else if (tool === "line") {
+      await create({ boardId, kind: "line", x: start.x, y: start.y, w: end.x - start.x, h: end.y - start.y, color });
+    } else {
+      // rect / circle: normalize the drag box; fall back to a default size on a bare click.
+      let r = normalizeRect({ x: start.x, y: start.y, w: end.x - start.x, h: end.y - start.y });
+      if (r.w < 4 && r.h < 4) r = { x: start.x, y: start.y, w: 120, h: 90 };
+      await create({ boardId, kind: tool, x: r.x, y: r.y, w: r.w, h: r.h, color });
+    }
+  };
 
   const onWheel = (e: React.WheelEvent) => {
     const rect = ref.current!.getBoundingClientRect();

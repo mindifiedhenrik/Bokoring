@@ -29,7 +29,7 @@ export default function BoardView() {
       {activeId === null ? (
         <div className="board-empty">Ingen tavla ännu. Skapa en med "+ Ny tavla".</div>
       ) : (
-        <Canvas elements={elements} />
+        <Canvas boardId={activeId} elements={elements} tool={tool} color={color} />
       )}
     </div>
   );
