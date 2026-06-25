@@ -39,3 +39,18 @@ export function normalizeRect(r: Rect): Rect {
     h: Math.abs(r.h),
   };
 }
+
+// Minimal shape needed to compute a bounding box (a subset of a board element).
+type BoundsInput = { kind: string; x: number; y: number; w: number; h: number };
+
+// World-space bounding box of an element. Lines store a vector (possibly negative),
+// so normalize them; other kinds already store a positive-size box.
+export function elementBounds(el: BoundsInput): Rect {
+  if (el.kind === "line") return normalizeRect({ x: el.x, y: el.y, w: el.w, h: el.h });
+  return { x: el.x, y: el.y, w: el.w, h: el.h };
+}
+
+// Axis-aligned overlap test. Edge-only touching counts as non-overlap.
+export function rectsIntersect(a: Rect, b: Rect): boolean {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}

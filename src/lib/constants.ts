@@ -15,3 +15,9 @@ export const BOARD_COLORS = ["#ffe9a8", "#f7c9d6", "#c8e6c9", "#bbdefb", "#d1c4e
 
 export const BOARD_TOOLS = ["select", "note", "text", "rect", "circle", "line"] as const;
 export type BoardTool = (typeof BOARD_TOOLS)[number];
+
+// Board text sizing. Defaults per kind when an element has no explicit fontSize.
+export const BOARD_FONT_DEFAULT: Record<string, number> = { note: 13, text: 16, rect: 13, circle: 13 };
+export const BOARD_FONT_MIN = 10;
+export const BOARD_FONT_MAX = 48;
+export const BOARD_FONT_STEP = 2;
