@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useMutation } from "convex/react";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
@@ -70,11 +70,17 @@ export default function Canvas({
     }
   };
 
-  const onWheel = (e: React.WheelEvent) => {
-    const rect = ref.current!.getBoundingClientRect();
-    const cursor = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    zoom(cursor, e.deltaY < 0 ? 1.1 : 1 / 1.1);
-  };
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = node.getBoundingClientRect();
+      zoom({ x: e.clientX - rect.left, y: e.clientY - rect.top }, e.deltaY < 0 ? 1.1 : 1 / 1.1);
+    };
+    node.addEventListener("wheel", handler, { passive: false });
+    return () => node.removeEventListener("wheel", handler);
+  }, [zoom]);
 
   const transform = `translate(${vp.panX}px, ${vp.panY}px) scale(${vp.zoom})`;
   const shapes = elements.filter((el) => el.kind === "line" || el.kind === "rect" || el.kind === "circle");
@@ -87,7 +93,6 @@ export default function Canvas({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onWheel={onWheel}
     >
       <svg className="board-svg" width="100%" height="100%">
         <g transform={`translate(${vp.panX}, ${vp.panY}) scale(${vp.zoom})`}>
