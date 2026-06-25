@@ -5,12 +5,14 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { BOARD_COLORS, type BoardTool } from "../../lib/constants";
 import BoardTabs from "./BoardTabs";
 import Toolbar from "./Toolbar";
+import Canvas from "./Canvas";
 
 export default function BoardView() {
   const boards = useQuery(api.boards.list) ?? [];
   const [activeId, setActiveId] = useState<Id<"boards"> | null>(null);
   const [tool, setTool] = useState<BoardTool>("select");
   const [color, setColor] = useState<string>(BOARD_COLORS[0]);
+  const elements = useQuery(api.boardElements.listByBoard, activeId ? { boardId: activeId } : "skip") ?? [];
 
   // Default to the first board once boards load / after deletion.
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function BoardView() {
       {activeId === null ? (
         <div className="board-empty">Ingen tavla ännu. Skapa en med "+ Ny tavla".</div>
       ) : (
-        <div className="board-placeholder">Tavla vald: {activeId}</div>
+        <Canvas elements={elements} />
       )}
     </div>
   );
