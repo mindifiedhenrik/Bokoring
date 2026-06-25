@@ -9,6 +9,8 @@ import ShapeElement from "./elements/ShapeElement";
 import NoteElement from "./elements/NoteElement";
 import TextElement from "./elements/TextElement";
 import SelectionHandles from "./SelectionHandles";
+import { usePresence } from "./usePresence";
+import Cursors from "./Cursors";
 
 type El = Doc<"boardElements">;
 
@@ -23,6 +25,7 @@ export default function Canvas({
   onSelect: (id: Id<"boardElements"> | null) => void;
 }) {
   const { vp, pan, zoom, toWorld } = useViewport();
+  const { others, report } = usePresence(boardId);
   const create = useMutation(api.boardElements.create);
   const update = useMutation(api.boardElements.update);
   const removeEl = useMutation(api.boardElements.remove);
@@ -89,6 +92,7 @@ export default function Canvas({
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
+    report(toWorld(screenInCanvas(e)));
     if (drag) {
       const w = toWorld(screenInCanvas(e));
       const dx = w.x - drag.startWorld.x;
@@ -200,6 +204,7 @@ export default function Canvas({
             const sel = elements.find((x) => x._id === selectedId);
             return sel ? <SelectionHandles el={drag?.id === sel._id ? { ...sel, ...drag.live } : sel} onResizeStart={(corner, e) => startResize(sel, corner, e)} /> : null;
           })()}
+          <Cursors cursors={others} />
         </g>
       </svg>
       <div className="board-html-layer" style={{ transform, transformOrigin: "0 0" }}>
