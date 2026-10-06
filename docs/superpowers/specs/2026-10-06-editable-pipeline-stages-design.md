@@ -111,7 +111,7 @@ All functions use `requireOrg` and verify the stage belongs to the caller's org.
 
 ## Error handling
 
-Mutations throw `Error` with Swedish user-facing messages; the UI catches and shows `toast(err.message)` for stage operations (falls back to "Något gick fel").
+Stage validation errors are thrown as `ConvexError("<Swedish message>")` so the message reaches the client intact (plain `Error` messages are wrapped/redacted by Convex). The UI catches and shows `toast(errorMessage(err))`, where `errorMessage` returns `err.data` for a string `ConvexError` and "Något gick fel" otherwise.
 
 ## Testing
 
