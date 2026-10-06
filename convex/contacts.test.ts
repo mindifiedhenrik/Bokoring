@@ -6,14 +6,14 @@ import { setupOrg, modules } from "./test.helpers";
 
 test("contacts.remove unlinks leads pointing to the contact", async () => {
   const t = convexTest(schema, modules);
-  const { as } = await setupOrg(t);
+  const { as, stages } = await setupOrg(t);
 
   const contactId = await as.mutation(api.contacts.create, {
     namn: "Anna", foretag: "Acme", epost: "a@acme.se", telefon: "070",
   });
   const leadId = await as.mutation(api.leads.create, {
     titel: "Affär", beskrivning: "", contactId, sannolikhet: 20,
-    datum: "2026-06-16", steg: "Lead",
+    datum: "2026-06-16", stageId: stages[0],
   });
 
   await as.mutation(api.contacts.remove, { id: contactId });

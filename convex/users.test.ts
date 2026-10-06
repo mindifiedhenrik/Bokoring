@@ -32,7 +32,7 @@ test("users.viewer returns the email", async () => {
 
 test("removeMember detaches a member and nulls their ownership in the org", async () => {
   const t = convexTest(schema, modules);
-  const { orgId, as } = await setupOrg(t, { joinCode: "USRR1111", email: "me@firma.se" });
+  const { orgId, as, stages } = await setupOrg(t, { joinCode: "USRR1111", email: "me@firma.se" });
   const victim = await t.run(async (ctx) => {
     const v = await ctx.db.insert("users", { email: "v@firma.se", activeOrgId: orgId });
     await ctx.db.insert("memberships", { userId: v, orgId });
@@ -40,7 +40,7 @@ test("removeMember detaches a member and nulls their ownership in the org", asyn
   });
   const projectId = await as.mutation(api.projects.create, { namn: "P", beskrivning: "" });
   const leadId = await as.mutation(api.leads.create, {
-    titel: "L", beskrivning: "", sannolikhet: 10, agareId: victim, datum: "2026-06-17", steg: "Lead",
+    titel: "L", beskrivning: "", sannolikhet: 10, agareId: victim, datum: "2026-06-17", stageId: stages[0],
   });
   const taskId = await as.mutation(api.tasks.create, {
     titel: "T", beskrivning: "", projectId, status: "Backlog", agareId: victim, prioritet: "Normal",
