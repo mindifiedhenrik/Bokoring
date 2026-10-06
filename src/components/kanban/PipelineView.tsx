@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -28,12 +28,6 @@ export default function PipelineView() {
   const modal = useModal();
   const toast = useToast();
 
-  async function createLead(stageId: Id<"stages">) {
-    const today = new Date().toISOString().slice(0, 10);
-    const id = await create({ titel: "Namnlöst lead", beskrivning: "", sannolikhet: 25, datum: today, stageId });
-    modal.openLeadDetail(id);
-  }
-
   const [dragId, setDragId] = useState<Id<"leads"> | null>(null);
   const [overStage, setOverStage] = useState<string | null>(null);
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
@@ -41,18 +35,33 @@ export default function PipelineView() {
   const [colHint, setColHint] = useState<{ id: Id<"stages">; before: boolean } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Stage | null>(null);
 
+  async function run(p: Promise<unknown>, ok?: string) {
+    try { await p; if (ok) toast(ok); return true; }
+    catch (err) { toast(errorMessage(err)); return false; }
+  }
+
+  async function createLead(stageId: Id<"stages">) {
+    const today = new Date().toISOString().slice(0, 10);
+    let id: Id<"leads">;
+    try {
+      id = await create({ titel: "Namnlöst lead", beskrivning: "", sannolikhet: 25, datum: today, stageId });
+    } catch (err) {
+      toast(errorMessage(err));
+      return;
+    }
+    modal.openLeadDetail(id);
+  }
+
   const lastStage = stages.at(-1);
   const won = lastStage ? leads.filter((l) => l.stageId === lastStage._id).length : 0;
+  // Leads not yet backfilled to a stage are not on the board, so don't count them.
+  const stageIds = new Set<string>(stages.map((s) => s._id));
+  const onBoard = leads.filter((l) => l.stageId !== undefined && stageIds.has(l.stageId)).length;
 
   function clearDrag() {
     setOverStage(null);
     setDropHint(null);
     setDragId(null);
-  }
-
-  async function run(p: Promise<unknown>, ok?: string) {
-    try { await p; if (ok) toast(ok); return true; }
-    catch (err) { toast(errorMessage(err)); return false; }
   }
 
   async function onColumnDrop() {
@@ -77,11 +86,9 @@ export default function PipelineView() {
     const insertIndex = hint && hint.key === stage._id ? insertIndexFromHint(excl, hint) : excl.length;
     const order = orderForIndex(excl, insertIndex);
     if (lead.stageId === stage._id) {
-      await reorder({ id, order });
-      toast("Ordning uppdaterad");
+      await run(reorder({ id, order }), "Ordning uppdaterad");
     } else {
-      await move({ id, stageId: stage._id, order });
-      toast(`Flyttad till "${stage.namn}"`);
+      await run(move({ id, stageId: stage._id, order }), `Flyttad till "${stage.namn}"`);
     }
   }
 
@@ -91,7 +98,7 @@ export default function PipelineView() {
         <div>
           <h1>Pipeline</h1>
           <div className="lead-sub">
-            {leads.length} affärer i pipeline · {won} stängda · dra korten för att byta steg.
+            {onBoard} affärer i pipeline · {won} stängda · dra korten för att byta steg.
           </div>
         </div>
         <div className="spacer"></div>
@@ -103,7 +110,7 @@ export default function PipelineView() {
         </button>
       </div>
 
-      <div className="board" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(240px, 1fr)) 180px` }}>
+      <div className="board" style={{ ["--stage-cols" as string]: Math.max(stages.length, 1) } as CSSProperties}>
         {stages.map((stage) => {
           const items = leads.filter((l) => l.stageId === stage._id);
           return (

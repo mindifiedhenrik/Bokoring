@@ -73,3 +73,28 @@ test("leads.update refuses a lead from another org", async () => {
     orgB.as.mutation(api.leads.update, { id, ...base, titel: "Hacked", sannolikhet: 99, stageId: orgB.stages[0] }),
   ).rejects.toThrow();
 });
+
+test("leads.update rejects another org's stageId on an own lead", async () => {
+  const t = convexTest(schema, modules);
+  const a = await setupOrg(t, { joinCode: "ORGA4444", email: "a4@firma.se" });
+  const b = await setupOrg(t, { joinCode: "ORGB4444", email: "b4@firma.se" });
+  const id = await a.as.mutation(api.leads.create, { ...base, stageId: a.stages[0] });
+  await expect(a.as.mutation(api.leads.update, { id, ...base, stageId: b.stages[0] })).rejects.toThrow("Steget saknas");
+});
+
+test("leads.move rejects another org's stageId", async () => {
+  const t = convexTest(schema, modules);
+  const a = await setupOrg(t, { joinCode: "ORGA5555", email: "a5@firma.se" });
+  const b = await setupOrg(t, { joinCode: "ORGB5555", email: "b5@firma.se" });
+  const id = await a.as.mutation(api.leads.create, { ...base, stageId: a.stages[0] });
+  await expect(a.as.mutation(api.leads.move, { id, stageId: b.stages[0] })).rejects.toThrow("Steget saknas");
+});
+
+test("leads.move to the same stage is a no-op", async () => {
+  const t = convexTest(schema, modules);
+  const { as, stages } = await setupOrg(t);
+  const id = await as.mutation(api.leads.create, { ...base, stageId: stages[0] });
+  await as.mutation(api.leads.move, { id, stageId: stages[0] });
+  const lead = (await as.query(api.leads.list, {})).find((l) => l._id === id)!;
+  expect(lead.log).toHaveLength(1);
+});

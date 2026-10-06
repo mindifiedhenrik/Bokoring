@@ -116,3 +116,49 @@ test("remove refuses to delete the last stage", async () => {
   for (const id of stages.slice(1)) await as.mutation(api.stages.remove, { id });
   await expect(as.mutation(api.stages.remove, { id: stages[0] })).rejects.toThrow("Det sista steget kan inte tas bort");
 });
+
+test("create seeds the default stages first for an org that has none", async () => {
+  const t = convexTest(schema, modules);
+  const userId = await t.run(async (ctx) => {
+    const orgId = await ctx.db.insert("organizations", { namn: "Utan steg", joinCode: "NOSTAGE1" });
+    const userId = await ctx.db.insert("users", { email: "nostage@firma.se", activeOrgId: orgId });
+    await ctx.db.insert("memberships", { userId, orgId });
+    return userId;
+  });
+  const as = t.withIdentity({ subject: `${userId}|s` });
+  await as.mutation(api.stages.create, { namn: "Ny" });
+  expect(names(await as.query(api.stages.list, {}))).toEqual(["Lead", "Kvalificerat", "Förslag", "Offererat", "Stängd", "Ny"]);
+});
+
+test("reorder rejects a non-finite order", async () => {
+  const t = convexTest(schema, modules);
+  const { as, stages } = await setupOrg(t);
+  await expect(as.mutation(api.stages.reorder, { id: stages[0], order: Infinity })).rejects.toThrow("Ogiltig ordning");
+  await expect(as.mutation(api.stages.reorder, { id: stages[0], order: NaN })).rejects.toThrow("Ogiltig ordning");
+});
+
+test("setColor rejects a value that is not a hex colour", async () => {
+  const t = convexTest(schema, modules);
+  const { as, stages } = await setupOrg(t);
+  await expect(as.mutation(api.stages.setColor, { id: stages[0], color: "red" })).rejects.toThrow("Ogiltig färg");
+});
+
+test("create and rename reject names longer than 60 characters", async () => {
+  const t = convexTest(schema, modules);
+  const { as, stages } = await setupOrg(t);
+  const long = "x".repeat(61);
+  await expect(as.mutation(api.stages.create, { namn: long })).rejects.toThrow("Namnet får vara högst 60 tecken");
+  await expect(as.mutation(api.stages.rename, { id: stages[0], namn: long })).rejects.toThrow("Namnet får vara högst 60 tecken");
+  await as.mutation(api.stages.create, { namn: "y".repeat(60) });
+});
+
+test("create rejects when the org already has 50 stages", async () => {
+  const t = convexTest(schema, modules);
+  const { as, orgId } = await setupOrg(t);
+  await t.run(async (ctx) => {
+    for (let i = 5; i < 50; i++) {
+      await ctx.db.insert("stages", { orgId, namn: `S${i}`, color: "#3f7e8c", order: i });
+    }
+  });
+  await expect(as.mutation(api.stages.create, { namn: "Ett för mycket" })).rejects.toThrow("En pipeline kan ha högst 50 steg");
+});

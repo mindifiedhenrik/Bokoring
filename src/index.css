@@ -131,7 +131,7 @@
 
   /* ---------- Kanban ---------- */
   .board {
-    flex: 1; display: grid; grid-template-columns: repeat(5, 1fr);
+    flex: 1; display: grid; grid-template-columns: repeat(var(--stage-cols, 5), minmax(240px, 1fr)) 180px;
     gap: 16px; padding: 8px 34px 28px; overflow-x: auto; align-items: start;
     min-height: 0;
   }
@@ -168,6 +168,7 @@
   }
   .col:hover .col-menu-btn, .col-menu-btn:focus-visible { opacity: 1; }
   .col-menu-btn:hover { background: var(--line); color: var(--ink); }
+  @media (hover: none) { .col-menu-btn { opacity: 1; } }
   .col-menu {
     position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 180px;
     background: #fff; border: 1px solid var(--line); border-radius: 10px;

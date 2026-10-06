@@ -1,7 +1,7 @@
 import { query, mutation, QueryCtx } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
-import { requireOrg, PROJECT_COLORS } from "./helpers";
+import { requireOrg, insertDefaultStages, PROJECT_COLORS } from "./helpers";
 
 // An org has a handful of stages; 100 is a generous safety bound.
 async function orgStages(ctx: QueryCtx, orgId: Id<"organizations">) {
@@ -22,6 +22,7 @@ async function ownStage(ctx: QueryCtx, orgId: Id<"organizations">, id: Id<"stage
 function validName(stages: Doc<"stages">[], namn: string, selfId?: Id<"stages">) {
   const clean = namn.trim();
   if (!clean) throw new ConvexError("Namnet får inte vara tomt");
+  if (clean.length > 60) throw new ConvexError("Namnet får vara högst 60 tecken");
   const clash = stages.find((s) => s._id !== selfId && s.namn.toLowerCase() === clean.toLowerCase());
   if (clash) throw new ConvexError(`Det finns redan ett steg som heter "${clash.namn}"`);
   return clean;
@@ -39,7 +40,14 @@ export const create = mutation({
   args: { namn: v.string() },
   handler: async (ctx, { namn }) => {
     const { orgId } = await requireOrg(ctx);
-    const stages = await orgStages(ctx, orgId);
+    let stages = await orgStages(ctx, orgId);
+    if (stages.length === 0) {
+      // Added before the backfill ran: seed the defaults so the backfill does
+      // not dump every legacy lead into this single new stage.
+      await insertDefaultStages(ctx, orgId);
+      stages = await orgStages(ctx, orgId);
+    }
+    if (stages.length >= 50) throw new ConvexError("En pipeline kan ha högst 50 steg");
     const clean = validName(stages, namn);
     const order = stages.length ? stages[stages.length - 1].order + 1 : 0;
     const color = PROJECT_COLORS[stages.length % PROJECT_COLORS.length];
@@ -63,6 +71,7 @@ export const setColor = mutation({
   handler: async (ctx, { id, color }) => {
     const { orgId } = await requireOrg(ctx);
     await ownStage(ctx, orgId, id);
+    if (!/^#[0-9a-f]{6}$/i.test(color)) throw new ConvexError("Ogiltig färg");
     await ctx.db.patch("stages", id, { color });
     return null;
   },
@@ -73,6 +82,7 @@ export const reorder = mutation({
   handler: async (ctx, { id, order }) => {
     const { orgId } = await requireOrg(ctx);
     await ownStage(ctx, orgId, id);
+    if (!Number.isFinite(order)) throw new ConvexError("Ogiltig ordning");
     await ctx.db.patch("stages", id, { order });
     return null;
   },
