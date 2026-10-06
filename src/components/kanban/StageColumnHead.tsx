@@ -18,6 +18,7 @@ export default function StageColumnHead({ stage, count, canDelete, onRename, onC
   const [renaming, setRenaming] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const settled = useRef(false); // set once a rename session is finished (Enter/Esc), so a trailing blur is ignored
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -28,7 +29,14 @@ export default function StageColumnHead({ stage, count, canDelete, onRename, onC
     return () => document.removeEventListener("mousedown", close);
   }, [menuOpen]);
 
+  const startRename = () => {
+    settled.current = false;
+    setRenaming(stage.namn);
+  };
+
   const commit = () => {
+    if (settled.current) return;
+    settled.current = true;
     const namn = renaming?.trim();
     setRenaming(null);
     if (namn && namn !== stage.namn) onRename(namn); // empty or unchanged → cancel
@@ -51,11 +59,11 @@ export default function StageColumnHead({ stage, count, canDelete, onRename, onC
           onBlur={commit}
           onKeyDown={(e) => {
             if (e.key === "Enter") commit();
-            else if (e.key === "Escape") setRenaming(null);
+            else if (e.key === "Escape") { settled.current = true; setRenaming(null); }
           }}
         />
       ) : (
-        <h2 title="Dubbelklicka för att byta namn" onDoubleClick={() => setRenaming(stage.namn)}>{stage.namn}</h2>
+        <h2 title="Dubbelklicka för att byta namn" onDoubleClick={startRename}>{stage.namn}</h2>
       )}
       <span className="n">{count}</span>
       <div className="col-menu-wrap" ref={menuRef}>
@@ -73,7 +81,7 @@ export default function StageColumnHead({ stage, count, canDelete, onRename, onC
                 />
               ))}
             </div>
-            <button className="col-menu-item" onClick={() => { setMenuOpen(false); setRenaming(stage.namn); }}>Byt namn</button>
+            <button className="col-menu-item" onClick={() => { setMenuOpen(false); startRename(); }}>Byt namn</button>
             <button
               className="col-menu-item danger"
               disabled={!canDelete}
