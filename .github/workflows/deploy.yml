@@ -32,6 +32,12 @@ jobs:
         run: npx convex deploy --cmd 'npm run build' --cmd-url-env-var-name VITE_CONVEX_URL
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+      # Editable stages (widen phase): seed stages + map legacy `steg` → `stageId`
+      # before the new frontend goes live. Idempotent. Remove in the narrow PR.
+      - name: Backfill pipeline stages
+        run: npx convex run migrations:backfillStages
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

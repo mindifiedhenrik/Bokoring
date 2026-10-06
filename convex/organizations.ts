@@ -1,7 +1,7 @@
 import { mutation, internalQuery, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { requireOrg } from "./helpers";
+import { insertDefaultStages, requireOrg } from "./helpers";
 
 // Unambiguous alphabet (no I/O/0/1). Math.random is allowed in Convex mutations.
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -44,6 +44,7 @@ export const create = mutation({
     if (!userId) throw new Error("Inte inloggad");
     const joinCode = await genJoinCode(ctx);
     const orgId = await ctx.db.insert("organizations", { namn: namn.trim() || "Organisation", joinCode });
+    await insertDefaultStages(ctx, orgId);
     await ctx.db.insert("memberships", { userId, orgId });
     await ctx.db.patch("users", userId, { activeOrgId: orgId });
     return { orgId, joinCode };

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { STAGES, STAGE_VAR, TASK_STATUSES, PRIORITIES } from "../../lib/constants";
+import { TASK_STATUSES, PRIORITIES } from "../../lib/constants";
+import { useStages, stageById } from "../../lib/stages";
 import { initials, fmtDate } from "../../lib/format";
 import { ownerName } from "../../lib/users";
 import { useModal } from "../../context/ModalContext";
@@ -23,6 +24,7 @@ export default function CardDetail(props: Props) {
   const contacts = useQuery(api.contacts.list) ?? [];
   const projects = useQuery(api.projects.list) ?? [];
   const users = useQuery(api.users.list) ?? [];
+  const stages = useStages();
   const updateLead = useMutation(api.leads.update);
   const updateTask = useMutation(api.tasks.update);
   const removeLead = useMutation(api.leads.remove);
@@ -42,12 +44,12 @@ export default function CardDetail(props: Props) {
     ...users.map((u) => ({ value: u._id as string, label: u.displayName })),
   ];
 
-  async function saveLead(patch: Partial<{ titel: string; beskrivning: string; contactId?: Id<"contacts">; sannolikhet: number; agareId?: Id<"users">; datum: string; steg: string }>) {
-    if (!lead) return;
+  async function saveLead(patch: Partial<{ titel: string; beskrivning: string; contactId?: Id<"contacts">; sannolikhet: number; agareId?: Id<"users">; datum: string; stageId: Id<"stages"> }>) {
+    if (!lead || !lead.stageId) return;
     await updateLead({
       id: lead._id,
       titel: lead.titel, beskrivning: lead.beskrivning, contactId: lead.contactId,
-      sannolikhet: lead.sannolikhet, agareId: lead.agareId, datum: lead.datum, steg: lead.steg,
+      sannolikhet: lead.sannolikhet, agareId: lead.agareId, datum: lead.datum, stageId: lead.stageId,
       ...patch,
     });
   }
@@ -70,9 +72,10 @@ export default function CardDetail(props: Props) {
     toast(type === "lead" ? "Lead borttaget" : "Uppgift borttagen");
   }
 
-  const headColor = lead ? STAGE_VAR[lead.steg]
+  const leadStage = lead ? stageById(stages, lead.stageId) : undefined;
+  const headColor = lead ? leadStage?.color ?? "var(--line)"
     : projects.find((p) => p._id === task!.projectId)?.color ?? "var(--line)";
-  const headTag = lead ? lead.steg : task!.status;
+  const headTag = lead ? leadStage?.namn ?? "" : task!.status;
 
   return (
     <Modal onClose={modal.close}>
@@ -137,9 +140,9 @@ export default function CardDetail(props: Props) {
                     onSave={(v) => saveLead({ agareId: idToUser(v) })} />
                   <InlineField type="date" label="Datum" value={lead.datum} display={fmtDate(lead.datum)}
                     onSave={(v) => saveLead({ datum: v })} />
-                  <InlineField type="select" label="Steg" value={lead.steg} options={STAGES.map((s) => ({ value: s, label: s }))}
-                    render={(v) => <span className="stage-badge" style={{ background: STAGE_VAR[v] }}>{v}</span>}
-                    onSave={(v) => saveLead({ steg: v })} />
+                  <InlineField type="select" label="Steg" value={lead.stageId ?? ""} options={stages.map((s) => ({ value: s._id as string, label: s.namn }))}
+                    render={(v) => { const s = stageById(stages, v as Id<"stages">); return <span className="stage-badge" style={{ background: s?.color }}>{s?.namn}</span>; }}
+                    onSave={(v) => saveLead({ stageId: v as Id<"stages"> })} />
                   <InlineField type="textarea" label="Beskrivning" className="full" value={lead.beskrivning}
                     placeholder="Bakgrund, behov, nästa steg…" onSave={(v) => saveLead({ beskrivning: v })} />
                 </>

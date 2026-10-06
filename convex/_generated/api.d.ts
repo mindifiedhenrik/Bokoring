@@ -24,6 +24,7 @@ import type * as organizations from "../organizations.js";
 import type * as projects from "../projects.js";
 import type * as seed from "../seed.js";
 import type * as settings from "../settings.js";
+import type * as stages from "../stages.js";
 import type * as tasks from "../tasks.js";
 import type * as userProfiles from "../userProfiles.js";
 import type * as users from "../users.js";
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   projects: typeof projects;
   seed: typeof seed;
   settings: typeof settings;
+  stages: typeof stages;
   tasks: typeof tasks;
   userProfiles: typeof userProfiles;
   users: typeof users;

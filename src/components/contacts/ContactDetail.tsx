@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { STAGE_VAR } from "../../lib/constants";
+import { useStages, stageById } from "../../lib/stages";
 import { initials } from "../../lib/format";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
@@ -19,6 +19,7 @@ interface ContactDetailProps {
 export default function ContactDetail({ id, returnLeadId }: ContactDetailProps) {
   const contacts = useQuery(api.contacts.list) ?? [];
   const leads = useQuery(api.leads.list) ?? [];
+  const stages = useStages();
   const update = useMutation(api.contacts.update);
   const remove = useMutation(api.contacts.remove);
   const markRead = useMutation(api.contacts.markRead);
@@ -115,21 +116,24 @@ export default function ContactDetail({ id, returnLeadId }: ContactDetailProps) 
         <div className="section-label">Kopplade affärer ({linked.length})</div>
         <div className="linked-leads">
           {linked.length > 0 ? (
-            linked.map((l) => (
-              <div
-                key={l._id}
-                className="linked-lead"
-                onClick={() => modal.openLeadDetail(l._id)}
-              >
-                <span
-                  className="stage-dot"
-                  style={{ background: STAGE_VAR[l.steg] }}
-                />
-                <span className="ll-title">{l.titel}</span>
-                <span className="pill">{l.steg}</span>
-                <span className="ll-prob">{Number(l.sannolikhet) || 0}%</span>
-              </div>
-            ))
+            linked.map((l) => {
+              const stage = stageById(stages, l.stageId);
+              return (
+                <div
+                  key={l._id}
+                  className="linked-lead"
+                  onClick={() => modal.openLeadDetail(l._id)}
+                >
+                  <span
+                    className="stage-dot"
+                    style={{ background: stage?.color }}
+                  />
+                  <span className="ll-title">{l.titel}</span>
+                  <span className="pill">{stage?.namn ?? "—"}</span>
+                  <span className="ll-prob">{Number(l.sannolikhet) || 0}%</span>
+                </div>
+              );
+            })
           ) : (
             <div className="muted">Inga affärer kopplade till denna kontakt ännu.</div>
           )}

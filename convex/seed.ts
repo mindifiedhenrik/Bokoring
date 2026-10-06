@@ -1,5 +1,5 @@
 import { internalMutation } from "./_generated/server";
-import { PROJECT_COLORS } from "./helpers";
+import { PROJECT_COLORS, insertDefaultStages } from "./helpers";
 
 const tAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 
@@ -12,6 +12,7 @@ export const run = internalMutation({
 
     // Seed runs on an empty deployment; create the org these rows belong to.
     const orgId = await ctx.db.insert("organizations", { namn: "Boköring", joinCode: "BOKORING" });
+    const stageIds = await insertDefaultStages(ctx, orgId);
 
     const c = [];
     for (const data of [
@@ -22,13 +23,15 @@ export const run = internalMutation({
     ]) c.push(await ctx.db.insert("contacts", { orgId, ...data }));
 
     const leadSeed = [
-      { titel: "Webbplattform & integration", beskrivning: "Behöver ny kundportal med ERP-koppling. Budget bekräftad.", contactId: c[0], sannolikhet: 30, datum: tAgo(2).slice(0, 10), steg: "Lead" },
-      { titel: "Lageroptimering Q3", beskrivning: "Utvärderar system för lagerstyrning inför expansion.", contactId: c[1], sannolikhet: 55, datum: tAgo(5).slice(0, 10), steg: "Kvalificerat" },
-      { titel: "Varumärkesidentitet", beskrivning: "Rebranding inklusive ny visuell profil och webb.", contactId: c[2], sannolikhet: 70, datum: tAgo(9).slice(0, 10), steg: "Förslag" },
-      { titel: "Vindkraft – serviceavtal", beskrivning: "Femårigt serviceavtal för turbinpark. Offert skickad.", contactId: c[3], sannolikhet: 85, datum: tAgo(14).slice(0, 10), steg: "Offererat" },
+      { titel: "Webbplattform & integration", beskrivning: "Behöver ny kundportal med ERP-koppling. Budget bekräftad.", contactId: c[0], sannolikhet: 30, datum: tAgo(2).slice(0, 10), stageId: stageIds[0] },
+      { titel: "Lageroptimering Q3", beskrivning: "Utvärderar system för lagerstyrning inför expansion.", contactId: c[1], sannolikhet: 55, datum: tAgo(5).slice(0, 10), stageId: stageIds[1] },
+      { titel: "Varumärkesidentitet", beskrivning: "Rebranding inklusive ny visuell profil och webb.", contactId: c[2], sannolikhet: 70, datum: tAgo(9).slice(0, 10), stageId: stageIds[2] },
+      { titel: "Vindkraft – serviceavtal", beskrivning: "Femårigt serviceavtal för turbinpark. Offert skickad.", contactId: c[3], sannolikhet: 85, datum: tAgo(14).slice(0, 10), stageId: stageIds[3] },
     ];
+    const stageNames = ["Lead", "Kvalificerat", "Förslag", "Offererat", "Stängd"];
     for (const l of leadSeed) {
-      await ctx.db.insert("leads", { orgId, ...l, log: [{ ts: new Date().toISOString(), from: null, to: l.steg }] });
+      const to = stageNames[stageIds.indexOf(l.stageId)];
+      await ctx.db.insert("leads", { orgId, ...l, log: [{ ts: new Date().toISOString(), from: null, to }] });
     }
 
     const p = [];
