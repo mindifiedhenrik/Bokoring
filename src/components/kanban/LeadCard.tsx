@@ -1,11 +1,11 @@
 import type React from "react";
 import type { Doc } from "../../../convex/_generated/dataModel";
-import { STAGE_VAR } from "../../lib/constants";
 import { initials } from "../../lib/format";
 
 interface LeadCardProps {
   lead: Doc<"leads">;
   contactName: string;
+  color: string;
   ownerName: string | null;
   onClick: () => void;
   onDragStart: () => void;
@@ -13,8 +13,7 @@ interface LeadCardProps {
   onDragOver?: (e: React.DragEvent) => void;
 }
 
-export default function LeadCard({ lead, contactName, ownerName, onClick, onDragStart, onDragEnd, onDragOver }: LeadCardProps) {
-  const color = STAGE_VAR[lead.steg];
+export default function LeadCard({ lead, contactName, color, ownerName, onClick, onDragStart, onDragEnd, onDragOver }: LeadCardProps) {
   const prob = lead.sannolikhet ?? 0;
 
   return (

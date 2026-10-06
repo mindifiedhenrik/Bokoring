@@ -1,16 +1,17 @@
-import { STAGE_VAR } from "../../lib/constants";
+import { useStages, stageColorByName } from "../../lib/stages";
 import { fmtTimestamp } from "../../lib/format";
 import type { Doc } from "../../../convex/_generated/dataModel";
 
 type LogEntry = Doc<"leads">["log"][number];
 
 export default function CardLog({ type, log }: { type: "lead" | "task"; log: LogEntry[] }) {
+  const stages = useStages();
   const sorted = [...log].sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
   if (sorted.length === 0) return <div className="muted">Ingen historik ännu.</div>;
 
   const stageBadge = (s: string | null | undefined) =>
     type === "lead"
-      ? <span className="stage-badge" style={{ background: s ? STAGE_VAR[s] : undefined }}>{s}</span>
+      ? <span className="stage-badge" style={{ background: stageColorByName(stages, s) }}>{s}</span>
       : <span className="pill">{s}</span>;
 
   return (
