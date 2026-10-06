@@ -137,3 +137,16 @@ test("rename rejects a blank name", async () => {
   const as = t.withIdentity({ subject: `${userId}|s` });
   await expect(as.mutation(api.organizations.rename, { namn: "   " })).rejects.toThrow();
 });
+
+test("create seeds the five default pipeline stages in order", async () => {
+  const t = convexTest(schema, modules);
+  const userId = await t.run((ctx) => ctx.db.insert("users", { email: "s@firma.se" }));
+  const as = t.withIdentity({ subject: `${userId}|s` });
+  const { orgId } = await as.mutation(api.organizations.create, { namn: "Steg AB" });
+  const stages = await t.run((ctx) =>
+    ctx.db.query("stages").withIndex("by_org", (q) => q.eq("orgId", orgId)).collect(),
+  );
+  const sorted = stages.sort((a, b) => a.order - b.order);
+  expect(sorted.map((s) => s.namn)).toEqual(["Lead", "Kvalificerat", "Förslag", "Offererat", "Stängd"]);
+  expect(sorted.map((s) => s.color)).toEqual(["#6b8aa8", "#8a6fa8", "#c8923a", "#c45b32", "#4f7a52"]);
+});

@@ -56,13 +56,25 @@ export default defineSchema({
     // optional field so existing production documents validate without a migration.
     agare: v.optional(v.string()),
     datum: v.string(),
-    steg: v.string(),
+    // Widen phase: stageId is the source of truth; legacy `steg` (stage name)
+    // stays optional until the narrow migration removes it.
+    stageId: v.optional(v.id("stages")),
+    steg: v.optional(v.string()),
     log: v.array(logEntry),
     order: v.optional(v.number()),
   })
     .index("by_contact", ["contactId"])
     .index("by_agare", ["agareId"])
-    .index("by_org", ["orgId"]),
+    .index("by_org", ["orgId"])
+    .index("by_stageId", ["stageId"]),
+  // Per-org pipeline stages. Column order = ascending `order`; the last stage
+  // counts as "stängd" in the pipeline header.
+  stages: defineTable({
+    orgId: v.id("organizations"),
+    namn: v.string(),
+    color: v.string(),
+    order: v.number(),
+  }).index("by_org", ["orgId"]),
   projects: defineTable({
     orgId: v.id("organizations"),
     namn: v.string(),

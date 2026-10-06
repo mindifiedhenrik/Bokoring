@@ -1,6 +1,7 @@
 import { convexTest } from "convex-test";
 import schema from "./schema";
 import { Id } from "./_generated/dataModel";
+import { insertDefaultStages } from "./helpers";
 
 export { schema };
 export const modules = import.meta.glob("./**/*.ts");
@@ -14,7 +15,7 @@ export async function setupOrg(
   t: ReturnType<typeof convexTest>,
   opts?: { namn?: string; joinCode?: string; email?: string },
 ) {
-  const { orgId, userId } = await t.run(async (ctx) => {
+  const { orgId, userId, stages } = await t.run(async (ctx) => {
     const orgId = await ctx.db.insert("organizations", {
       namn: opts?.namn ?? "Testorg",
       joinCode: opts?.joinCode ?? "TESTCODE",
@@ -24,8 +25,9 @@ export async function setupOrg(
       activeOrgId: orgId,
     });
     await ctx.db.insert("memberships", { userId, orgId });
-    return { orgId, userId };
+    const stages = await insertDefaultStages(ctx, orgId);
+    return { orgId, userId, stages };
   });
   const as = t.withIdentity({ subject: `${userId}|s` });
-  return { orgId: orgId as Id<"organizations">, userId: userId as Id<"users">, as };
+  return { orgId: orgId as Id<"organizations">, userId: userId as Id<"users">, stages, as };
 }
