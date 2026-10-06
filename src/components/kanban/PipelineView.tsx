@@ -2,12 +2,15 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { useStages, type Stage } from "../../lib/stages";
+import { useStages, errorMessage, type Stage } from "../../lib/stages";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
 import { orderForIndex, insertIndexFromHint, type DropHint } from "../../lib/ordering";
 import { ownerName } from "../../lib/users";
 import LeadCard from "./LeadCard";
+import StageColumnHead from "./StageColumnHead";
+import StageDeleteModal from "./StageDeleteModal";
+import AddStageColumn from "./AddStageColumn";
 
 export default function PipelineView() {
   const leads = useQuery(api.leads.list) ?? [];
@@ -17,6 +20,11 @@ export default function PipelineView() {
   const move = useMutation(api.leads.move);
   const reorder = useMutation(api.leads.reorder);
   const create = useMutation(api.leads.create);
+  const createStage = useMutation(api.stages.create);
+  const renameStage = useMutation(api.stages.rename);
+  const colorStage = useMutation(api.stages.setColor);
+  const reorderStage = useMutation(api.stages.reorder);
+  const removeStage = useMutation(api.stages.remove);
   const modal = useModal();
   const toast = useToast();
 
@@ -29,6 +37,9 @@ export default function PipelineView() {
   const [dragId, setDragId] = useState<Id<"leads"> | null>(null);
   const [overStage, setOverStage] = useState<string | null>(null);
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
+  const [colDragId, setColDragId] = useState<Id<"stages"> | null>(null);
+  const [colHint, setColHint] = useState<{ id: Id<"stages">; before: boolean } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Stage | null>(null);
 
   const lastStage = stages.at(-1);
   const won = lastStage ? leads.filter((l) => l.stageId === lastStage._id).length : 0;
@@ -37,6 +48,22 @@ export default function PipelineView() {
     setOverStage(null);
     setDropHint(null);
     setDragId(null);
+  }
+
+  async function run(p: Promise<unknown>, ok?: string) {
+    try { await p; if (ok) toast(ok); return true; }
+    catch (err) { toast(errorMessage(err)); return false; }
+  }
+
+  async function onColumnDrop() {
+    const id = colDragId;
+    const hint = colHint;
+    setColDragId(null);
+    setColHint(null);
+    if (!id || !hint || hint.id === id) return;
+    const excl = stages.filter((s) => s._id !== id);
+    const order = orderForIndex(excl.map((s) => ({ order: s.order, _creationTime: s._creationTime })), insertIndexFromHint(excl, hint));
+    await run(reorderStage({ id, order }));
   }
 
   async function onDrop(stage: Stage) {
@@ -76,29 +103,41 @@ export default function PipelineView() {
         </button>
       </div>
 
-      <div className="board" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(240px, 1fr))` }}>
+      <div className="board" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(240px, 1fr)) 180px` }}>
         {stages.map((stage) => {
           const items = leads.filter((l) => l.stageId === stage._id);
           return (
             <div
               key={stage._id}
-              className={"col" + (overStage === stage._id ? " drag-over" : "")}
+              className={"col" + (overStage === stage._id ? " drag-over" : "")
+                + (colHint?.id === stage._id && colDragId !== stage._id ? (colHint.before ? " col-drop-before" : " col-drop-after") : "")}
               onDragOver={(e) => {
                 e.preventDefault();
+                if (colDragId) {
+                  const r = e.currentTarget.getBoundingClientRect();
+                  setColHint({ id: stage._id, before: e.clientX < r.left + r.width / 2 });
+                  return;
+                }
                 setOverStage(stage._id);
                 if (dragId) setDropHint({ key: stage._id, id: null, before: false });
               }}
               onDragLeave={() => setOverStage(null)}
-              onDrop={() => onDrop(stage)}
+              onDrop={() => (colDragId ? onColumnDrop() : onDrop(stage))}
             >
-              <div className="col-head">
-                <span className="swatch" style={{ background: stage.color }}></span>
-                <h2>{stage.namn}</h2>
-                <span className="n">{items.length}</span>
-              </div>
+              <StageColumnHead
+                stage={stage}
+                count={items.length}
+                canDelete={stages.length > 1}
+                onRename={(namn) => run(renameStage({ id: stage._id, namn }))}
+                onColor={(color) => run(colorStage({ id: stage._id, color }))}
+                onRequestDelete={() => setPendingDelete(stage)}
+                onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setColDragId(stage._id); }}
+                onDragEnd={() => { setColDragId(null); setColHint(null); }}
+              />
               <div
                 className="col-body"
                 onDragOver={(e) => {
+                  if (colDragId) return;
                   e.preventDefault();
                   if (dragId) setDropHint({ key: stage._id, id: null, before: false });
                 }}
@@ -120,6 +159,7 @@ export default function PipelineView() {
                             onDragStart={() => setDragId(lead._id)}
                             onDragEnd={clearDrag}
                             onDragOver={(e) => {
+                              if (colDragId) return;
                               e.preventDefault();
                               e.stopPropagation();
                               if (!dragId) return;
@@ -148,7 +188,22 @@ export default function PipelineView() {
             </div>
           );
         })}
+        <AddStageColumn onCreate={(namn) => run(createStage({ namn }), `Steget "${namn}" skapat`)} />
       </div>
+
+      {pendingDelete && (
+        <StageDeleteModal
+          stage={pendingDelete}
+          count={leads.filter((l) => l.stageId === pendingDelete._id).length}
+          others={stages.filter((s) => s._id !== pendingDelete._id)}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={async (moveToId) => {
+            const target = pendingDelete;
+            setPendingDelete(null);
+            await run(removeStage({ id: target._id, moveToId }), `Steget "${target.namn}" borttaget`);
+          }}
+        />
+      )}
     </>
   );
 }
