@@ -16,8 +16,16 @@ export async function findUserByEmail(
   return users.length === 1 ? users[0] : null;
 }
 
+// Always show Google's account chooser. Without `prompt=select_account` Google
+// silently reuses the account already signed in to the browser, so a user who
+// signed in with the wrong account (e.g. lands on JoinOrgScreen) could sign
+// out but never pick a different account.
+export const googleProvider = Google({
+  authorization: { params: { prompt: "select_account" } },
+});
+
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [Google],
+  providers: [googleProvider],
   callbacks: {
     // Google is the only provider. Brand-new users arrive with no organization
     // and are routed to JoinOrgScreen, which enrolls them via

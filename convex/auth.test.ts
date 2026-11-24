@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import { findUserByEmail } from "./auth";
+import { findUserByEmail, googleProvider } from "./auth";
 import schema from "./schema";
 import { modules } from "./test.helpers";
 
@@ -27,4 +27,14 @@ test("findUserByEmail returns null when the email is ambiguous", async () => {
   });
   const found = await t.run((ctx) => findUserByEmail(ctx.db, "dup@firma.se"));
   expect(found).toBeNull();
+});
+
+test("Google sign-in always shows the account chooser", () => {
+  // Without prompt=select_account Google silently reuses the browser's
+  // signed-in account, so a user who picked the wrong account can never
+  // switch to another one.
+  const options = (googleProvider as unknown as {
+    options: { authorization: { params: Record<string, string> } };
+  }).options;
+  expect(options.authorization.params.prompt).toBe("select_account");
 });
